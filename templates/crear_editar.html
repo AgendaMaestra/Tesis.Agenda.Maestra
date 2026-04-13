@@ -1,0 +1,77 @@
+{% extends 'layout.html' %} 
+{% block content %} 
+<div class="main-wrapper"> 
+     <div class="glass-card"> 
+         <h2 style="font-size: 1.8rem; margin-bottom: 30px; color: var(--accent);"> 
+             {{ 'EDITAR ELEMENTO' if tarea else 'NUEVO ELEMENTO' }} 
+         </h2> 
+                 
+         <form method="POST" id="main-form"> 
+             <label style="font-size:0.75rem; font-weight:800; opacity:0.5; text-transform:uppercase;">Tipo de actividad</label> 
+             <select name="tipo" required> 
+                 <option value="tarea" {{ 'selected' if tarea and tarea.tipo == 'tarea' else '' }}>Es una Tarea ordinaria</option> 
+                 <option value="examen" {{ 'selected' if tarea and tarea.tipo == 'examen' else '' }}>Es un Examen evaluativo</option> 
+             </select> 
+
+             <label style="font-size:0.75rem; font-weight:800; opacity:0.5; text-transform:uppercase;">Nombre de la Materia</label> 
+             <input type="text" name="materia" placeholder="Ej: Matematica" value="{{ tarea.materia if tarea else '' }}" required> 
+                         
+             <label style="font-size:0.75rem; font-weight:800; opacity:0.5; text-transform:uppercase;">Título o tema de estudio</label> 
+             <input type="text" name="tema" placeholder="Ej: Capitulo 3" value="{{ tarea.tema if tarea else '' }}" required> 
+
+             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                 <div>
+                     <label style="font-size:0.75rem; font-weight:800; opacity:0.5; text-transform:uppercase;">Día de entrega</label> 
+                     <input type="date" name="fecha" value="{{ tarea.fecha if tarea else '' }}" required> 
+                 </div>
+                 
+                 <div>
+                     <label style="font-size:0.75rem; font-weight:800; opacity:0.5; text-transform:uppercase;">Hora de entrega</label> 
+                     
+                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                         <select name="hora_h" style="margin-bottom:0;">
+                             {% for h in range(0, 24) %}
+                                 {% set hr = "%02d" % h %}
+                                 <option value="{{ hr }}" {{ 'selected' if hora_actual == hr else '' }}>{{ hr }} Hs</option>
+                             {% endfor %}
+                         </select>
+                         <select name="hora_m" style="margin-bottom:0;">
+                             {% for m in range(0, 60, 5) %}
+                                 {% set mn = "%02d" % m %}
+                                 <option value="{{ mn }}" {{ 'selected' if minuto_actual == mn else '' }}>{{ mn }} min</option>
+                             {% endfor %}
+                         </select>
+                     </div>
+                 </div>
+             </div>
+                         
+             <input type="checkbox" name="importante" id="imp-check" style="display:none;" {{ 'checked' if tarea and tarea.importante else '' }}> 
+                         
+             <div class="priority-box {{ 'active' if tarea and tarea.importante else '' }}" id="priority-trigger"> 
+                 <div> 
+                     <div style="font-weight: 800; font-size: 0.95rem;">Prioridad Máxima</div> 
+                     <div style="font-size: 0.75rem; opacity: 0.6; margin-top: 3px;">Resaltar al principio del tablero principal</div> 
+                 </div> 
+                 <div class="priority-toggle"></div> 
+             </div> 
+
+             <button type="submit" class="btn-main" style="margin-top: 10px;">GUARDAR ELEMENTO</button> 
+             <a href="{{ url_for('index') }}" style="display:block; text-align:center; margin-top:20px; color:var(--text-muted); text-decoration:none; font-size:0.85rem; font-weight: 700;">Cancelar y salir</a> 
+         </form> 
+     </div> 
+</div> 
+
+<script> 
+     const trigger = document.getElementById('priority-trigger'); 
+     const checkbox = document.getElementById('imp-check'); 
+     
+     trigger.addEventListener('click', function() { 
+         checkbox.checked = !checkbox.checked; 
+         if(checkbox.checked) { 
+             trigger.classList.add('active'); 
+         } else { 
+             trigger.classList.remove('active'); 
+         } 
+     }); 
+</script> 
+{% endblock %}

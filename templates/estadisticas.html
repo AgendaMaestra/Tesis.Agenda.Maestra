@@ -1,0 +1,105 @@
+{% extends 'layout.html' %} 
+{% block content %} 
+<div class="main-wrapper"> 
+     <div class="glass-card estadisticas-card" style="max-width: 800px;"> 
+         <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 25px; gap: 10px;">
+             <h2 class="titulo-estadisticas" style="color: var(--accent); margin:0; font-size:1.4rem;">Rendimiento del Estudiante</h2> 
+             <a href="{{ url_for('index') }}" style="color: var(--text-muted); text-decoration:none; font-weight:700; font-size:0.85rem; flex-shrink:0;">← Tablero</a>
+         </div>
+
+         <div id="stats-data" 
+              data-hechas="{{ hechas }}" 
+              data-pendientes="{{ pendientes }}" 
+              data-total="{{ total }}"
+              data-labels-materias='{{ labels_materias | tojson }}'
+              data-values-materias='{{ values_materias | tojson }}'
+              style="display:none;"> 
+         </div> 
+
+         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 25px; margin-bottom: 25px;">
+             <div class="chart-container" style="width:100%; height:250px;"> 
+                 <p style="margin-bottom: 12px; opacity: 0.7; font-weight: 700; font-size: 0.9rem;">Global</p>
+                 <canvas id="chartProgreso" style="width:100%; height:100%;"></canvas> 
+             </div> 
+
+             <div class="chart-container" style="width:100%; height:250px;"> 
+                 <p style="margin-bottom: 12px; opacity: 0.7; font-weight: 700; font-size: 0.9rem;">Por Materia</p>
+                 <canvas id="chartMaterias" style="width:100%; height:100%;"></canvas> 
+             </div> 
+         </div>
+
+         <div class="stats-info"> 
+             <div class="stat-box"> 
+                 <span class="stat-number" style="color: var(--accent);">{{ total }}</span> 
+                 <span class="stat-label">Totales</span> 
+             </div> 
+             <div class="stat-box"> 
+                 <span class="stat-number" style="color: var(--success);">{{ hechas }}</span> 
+                 <span class="stat-label">Completadas</span> 
+             </div> 
+             <div class="stat-box"> 
+                 <span class="stat-number" style="color: var(--error);">{{ pendientes }}</span> 
+                 <span class="stat-label">Pendientes</span> 
+             </div> 
+         </div> 
+     </div> 
+</div> 
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const dataElement = document.getElementById("stats-data");
+    if (!dataElement) return;
+
+    const hechas = parseInt(dataElement.getAttribute("data-hechas")) || 0;
+    const pendientes = parseInt(dataElement.getAttribute("data-pendientes")) || 0;
+    const labelsMaterias = JSON.parse(dataElement.getAttribute("data-labels-materias") || "[]");
+    const valuesMaterias = JSON.parse(dataElement.getAttribute("data-values-materias") || "[]");
+
+    const ctxProgreso = document.getElementById("chartProgreso");
+    if (ctxProgreso) {
+        new Chart(ctxProgreso, {
+            type: "doughnut",
+            data: {
+                labels: ["Hechas", "Pendientes"],
+                datasets: [{
+                    data: [hechas, pendientes],
+                    backgroundColor: ["#2ed573", "#ff4757"],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { labels: { color: "#ffffff", font: { size: 11 } } } }
+            }
+        });
+    }
+
+    const ctxMaterias = document.getElementById("chartMaterias");
+    if (ctxMaterias) {
+        new Chart(ctxMaterias, {
+            type: "bar",
+            data: {
+                labels: labelsMaterias,
+                datasets: [{
+                    label: 'Carga',
+                    data: valuesMaterias,
+                    backgroundColor: "#38bdf8",
+                    borderRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { ticks: { color: "#ffffff", stepSize: 1, font: { size: 10 } }, grid: { color: "rgba(255,255,255,0.05)" } },
+                    x: { ticks: { color: "#ffffff", font: { size: 10 } }, grid: { display: false } }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

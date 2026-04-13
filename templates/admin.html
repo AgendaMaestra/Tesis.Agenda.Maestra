@@ -1,0 +1,16 @@
+{% extends 'layout.html' %} 
+{% block content %} 
+<div class="main-wrapper"> 
+    <div class="glass-card"> 
+        <h2>Panel Administrador</h2> 
+        <h3>Usuarios registrados</h3> 
+        <ul> 
+            {% for u in usuarios %} 
+            <li>{{ u.usuario }}</li> 
+            {% endfor %} 
+        </ul> 
+        <p style="margin-top:20px; font-weight:700;">Total de tareas creadas en la base: {{ tareas }}</p> 
+        <a href="{{ url_for('index') }}" style="display:block; text-align:center; margin-top:20px; color:var(--text-muted); text-decoration:none; font-size:0.85rem; font-weight: 700;">← Volver al tablero</a>
+    </div> 
+</div> 
+{% endblock %}

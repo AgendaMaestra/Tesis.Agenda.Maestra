@@ -1,0 +1,603 @@
+{% extends 'layout.html' %} 
+{% block content %} 
+<div class="main-wrapper"> 
+    <div class="glass-card"> 
+        <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 25px;"> 
+            <div> 
+                <h1 class="main-title" style="margin:0; font-size:1.6rem; letter-spacing: -0.5px;">AGENDA<span style="color:var(--accent)">MAESTRA</span></h1> 
+                <p class="sub-title" style="margin:0; opacity:0.6; font-size:0.85rem; font-weight: 500;">
+                    {% if ver_papelera == 1 %} 
+                        <span style="color: #ff4747;">Modo Papelera (Auto-vaciado en 2 días)</span>
+                    {% else %} 
+                        Organización inteligente para {{ usuario }} 
+                    {% endif %}
+                </p> 
+            </div> 
+            
+            <div class="dropdown-more" id="container-mas-opciones">
+                <button class="dropdown-btn" onclick="toggleMenuMasOpciones()">Más opciones ▾</button>
+                <div class="dropdown-content" id="menu-mas-opciones">
+                    <a href="{{ url_for('calendario') }}">Calendario</a>
+                    <a href="{{ url_for('estadisticas') }}">Estadísticas</a>
+                    <a href="{{ url_for('perfil') }}">Perfil</a>
+                    <a href="{{ url_for('logros') }}">Logros</a>
+                    <a href="{{ url_for('backup') }}">Respaldo SQL</a>
+                    <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin: 5px 0;">
+                    <a href="{{ url_for('logout') }}" style="color: #ff4747;">Cerrar Sesión</a>
+                </div>
+            </div>
+        </div> 
+
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px;"> 
+            <a href="{{ url_for('crear') }}" class="btn-main-solid" style="text-decoration:none; text-align: center;">
+                + NUEVO ELEMENTO
+            </a>
+            
+            {% if ver_papelera == 1 %}
+                <a href="{{ url_for('index') }}" class="btn-main-solid" style="background: var(--accent); color: #0f172a; text-decoration:none; text-align: center;">
+                    VOLVER A LA AGENDA
+                </a>
+            {% else %}
+                {% if ver_hechas == 1 %}
+                    <a href="{{ url_for('index', ver_hechas=0) }}" class="btn-main-secondary" style="text-decoration:none; text-align: center;">VER PENDIENTES</a>
+                {% else %}
+                    <a href="{{ url_for('index', ver_hechas=1) }}" class="btn-main-secondary" style="text-decoration:none; text-align: center;">VER COMPLETADAS</a>
+                {% endif %}
+            {% endif %}
+        </div>
+
+        <div class="filter-scroll-container" style="display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px; align-items: center;">
+    <a href="{{ url_for('index', ver_hechas=ver_hechas) }}" class="nav-filter-btn {{ 'active' if not request.args.get('tipo_filtro') and ver_papelera != 1 }}">Todo</a>
+    <a href="{{ url_for('index', tipo_filtro='tarea', ver_hechas=ver_hechas) }}" class="nav-filter-btn {{ 'active' if request.args.get('tipo_filtro') == 'tarea' }}">Tareas</a>
+    <a href="{{ url_for('index', tipo_filtro='examen', ver_hechas=ver_hechas) }}" class="nav-filter-btn {{ 'active' if request.args.get('tipo_filtro') == 'examen' }}">Exámenes</a>
+
+    {% if ver_papelera != 1 %}
+        <a href="{{ url_for('index', papelera=1) }}" class="nav-filter-btn trash-link" style="margin-left: auto; color: #ff4747;">
+             Papelera
+        </a>
+    {% endif %}
+
+    {% if ver_papelera == 1 and tareas|length > 0 %}
+        <a href="{{ url_for('vaciar_papelera') }}" 
+           class="btn-vaciar" 
+           style="white-space: nowrap;"
+           onclick="return confirm('¿Estás seguro? Esta acción no se puede deshacer y eliminará todo permanentemente.')">
+           Vaciar papelera
+        </a>
+    {% endif %}
+</div>
+
+        <div class="contenedor-tareas-master">
+            {% if tareas %}
+                {% for tarea in tareas %}
+                    <div class="tarea-card {{ 'tarea-extra' if loop.index > 3 }}" 
+                         style="--t-color: {{ tarea.color | safe }}; {{ 'display: none;' if loop.index > 3 }}">
+                        
+                        <div class="card-action-zone">
+                            <a href="{{ url_for('completar', id=tarea.id) }}" class="status-icon" style="text-decoration:none; font-size:1.2rem;">
+                                {{ '✅' if tarea.estado == 'hecha' else '⭕' }}
+                            </a>
+                        </div>
+
+                        <div class="card-info-zone">
+                            <span class="materia-tag" style="color: var(--t-color);">{{ tarea.materia }}</span>
+                            <h3 class="tema-title">{{ tarea.tema }}</h3>
+                            <div class="meta-data">
+                                <span>📅 {{ tarea.fecha }}</span>
+                                {% if tarea.importante == 1 %} 
+                                    <span class="priority-badge">★ Prioridad</span> 
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="card-options-zone">
+                            {% if ver_papelera == 1 %}
+                                <a href="{{ url_for('restaurar', id=tarea.id) }}" title="Restaurar" style="text-decoration:none;">🔄</a>
+                            {% else %}
+                                <a href="{{ url_for('editar', id=tarea.id) }}" class="icon-btn" title="Editar" style="text-decoration:none;">📝</a>
+                                <a href="{{ url_for('eliminar', id=tarea.id) }}" class="icon-btn" onclick="return confirm('¿Mover a la papelera por 2 días?')" title="Eliminar" style="text-decoration:none;">🗑️</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+
+                {% if tareas|length > 3 %}
+                    <button id="btn-toggle-tareas" class="btn-main-secondary" style="width: 100%; margin-top: 10px;" onclick="toggleTareas()">
+                        Ver {{ tareas|length - 3 }} tareas más ▾
+                    </button>
+                {% endif %}
+            {% else %}
+                <div class="empty-state" style="text-align: center; padding: 40px 20px; opacity: 0.5;">
+                    <p>{% if ver_papelera == 1 %} La papelera está vacía. {% else %} No hay elementos por aquí. {% endif %} </p>
+                </div>
+            {% endif %}
+        </div>
+    </div> 
+    <div id="ai-assistant-container" style="position: fixed; bottom: 20px; right: 20px; z-index: 9999;">
+    <button class="ai-btn" onclick="toggleAssistant()" title="Consultar Asistente IA">
+        <span class="ai-icon">🤖</span>
+    </button>
+
+    <div id="ai-panel" class="ai-panel">
+        <div class="ai-header">
+            <h3>Asistente Maestro</h3>
+            <button onclick="toggleAssistant()" style="background:none; border:none; color:white; cursor:pointer;">✕</button>
+        </div>
+        <div id="ai-content" class="ai-content">
+            <p>Analizando tus tareas pendientes...</p>
+            <div class="loader"></div>
+        </div>
+    </div>
+</div>
+
+<div id="help-container" style="position: fixed; bottom: 20px; left: 20px; z-index: 9999;">
+    <button class="help-btn" onclick="toggleHelp()" title="Guía de uso">
+        <span class="help-icon">❓</span>
+    </button>
+
+    <div id="help-modal" class="help-modal">
+        <div class="help-header">
+            <span>Guía Rápida: Agenda Maestra</span>
+            <button onclick="toggleHelp()" class="close-help">×</button>
+        </div>
+        <div class="help-body">
+            <div class="help-step">
+                <strong>Nuevo Elemento:</strong> Crea tareas o exámenes indicando materia y fecha.
+            </div>
+            <div class="help-step">
+                <strong>Papelera:</strong> Las tareas eliminadas se guardan 2 días antes de borrarse para siempre.
+            </div>
+            <div class="help-step">
+                <strong>Rachas y Niveles:</strong> Mantén tu racha activa completando tareas diariamente para subir de nivel.
+            </div>
+            <div class="help-step">
+                <strong>Asistente IA:</strong> Usa el botón de la derecha para recibir un análisis de tus prioridades.
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+<script>
+    /**
+     * Alterna la visibilidad del menú de opciones adicionales.
+     */
+    function toggleMenuMasOpciones() {
+        const menu = document.getElementById('menu-mas-opciones');
+        if (menu) {
+            const isVisible = menu.style.display === 'block';
+            menu.style.display = isVisible ? 'none' : 'block';
+        }
+    }
+
+    /**
+     * Cierre automático de menús al detectar clics fuera de los botones de activación.
+     */
+    window.onclick = function(event) {
+        if (!event.target.matches('.dropdown-btn')) {
+            const menu = document.getElementById('menu-mas-opciones');
+            if (menu && menu.style.display === 'block') {
+                menu.style.display = 'none';
+            }
+        }
+    }
+
+    /**
+     * Función original de mostrar todas las tareas (Primer Script)
+     */
+    function mostrarTodasLasTareas() {
+        const tareasOcultas = document.querySelectorAll('.tarea-oculta');
+        const boton = document.getElementById('btn-mostrar-mas');
+
+        tareasOcultas.forEach(tarea => {
+            tarea.style.display = 'grid'; 
+            tarea.style.animation = 'fadeIn 0.4s ease forwards';
+        });
+
+        if (boton) {
+            boton.style.display = 'none';
+        }
+    }
+
+    /**
+     * Función toggle con scroll y cambio de texto (Segundo Script)
+     * He adaptado para que reconozca tanto .tarea-extra como .tarea-oculta
+     */
+    function toggleTareas() {
+        const tareasExtra = document.querySelectorAll('.tarea-extra, .tarea-oculta');
+        const btn = document.getElementById('btn-toggle-tareas') || document.getElementById('btn-mostrar-mas');
+        
+        if (tareasExtra.length === 0) return;
+
+        // Verificamos si están ocultas (usando el primer elemento como referencia)
+        const estanOcultas = window.getComputedStyle(tareasExtra[0]).display === 'none' || tareasExtra[0].style.display === 'none';
+
+        if (estanOcultas) {
+            // MOSTRAR TODAS
+            tareasExtra.forEach(tarea => {
+                tarea.style.display = 'grid';
+                tarea.style.animation = 'fadeIn 0.4s ease forwards';
+            });
+            if (btn) btn.innerHTML = `Ocultar tareas extra ▴`;
+        } else {
+            // OCULTAR
+            tareasExtra.forEach(tarea => {
+                tarea.style.display = 'none';
+            });
+            if (btn) {
+                btn.innerHTML = `Ver ${tareasExtra.length} tareas más ▾`;
+                btn.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        }
+    }
+</script>
+<style>
+    /* SISTEMA DE VARIABLES DINÁMICAS (MODO OSCURO / CLARO) */
+    :root {
+        /* Configuración por defecto (Dark Mode) */
+        --text-primary: #ffffff;
+        --text-secondary: rgba(255, 255, 255, 0.6);
+        --card-bg: rgba(255, 255, 255, 0.04);
+        --card-hover: rgba(255, 255, 255, 0.09);
+        --border-glass: rgba(255, 255, 255, 0.08);
+        --dropdown-bg: #161b22;
+        --accent-fallback: #ffd700; /* Asegura un color de acento si no está definido */
+    }
+
+    /* Adaptación automática a Modo Claro */
+    @media (prefers-color-scheme: light) {
+        :root {
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --card-bg: rgba(0, 0, 0, 0.05);
+            --card-hover: rgba(0, 0, 0, 0.08);
+            --border-glass: rgba(0, 0, 0, 0.1);
+            --dropdown-bg: #ffffff;
+        }
+    }
+
+    /* Forzado manual de Modo Claro mediante clase en body */
+    body.light-mode, [data-theme="light"] {
+        --text-primary: #1e293b;
+        --text-secondary: #64748b;
+        --card-bg: rgba(0, 0, 0, 0.05);
+        --card-hover: rgba(0, 0, 0, 0.08);
+        --border-glass: rgba(0, 0, 0, 0.1);
+        --dropdown-bg: #ffffff;
+    }
+
+    /* CABECERA Y TÍTULOS */
+    .main-title { 
+        margin: 0; 
+        font-size: 1.6rem; 
+        letter-spacing: -0.5px; 
+        color: var(--text-primary); 
+        font-weight: 800;
+    }
+    .sub-title { 
+        margin: 0; 
+        font-size: 0.85rem; 
+        font-weight: 500; 
+        color: var(--text-secondary); 
+    }
+
+    /* ACCIONES PRINCIPALES (GRID) */
+    .action-grid { 
+        display: grid; 
+        grid-template-columns: 1fr 1fr; 
+        gap: 12px; 
+        margin-bottom: 20px; 
+    }
+
+    .btn-main-solid { 
+        background: var(--accent); 
+        color: #000 !important; 
+        text-decoration: none; 
+        display: flex; 
+        align-items: center; 
+        justify-content: center; 
+        padding: 14px; 
+        border-radius: 14px; 
+        font-weight: 800; 
+        transition: 0.3s;
+    }
+    .btn-main-solid:hover { transform: translateY(-2px); filter: brightness(1.1); }
+
+    .btn-secondary-adaptive, .btn-main-secondary { 
+        background: var(--card-bg); 
+        color: var(--text-primary); 
+        text-decoration: none; 
+        display: flex; 
+        align-items: center; 
+        justify-content: center; 
+        padding: 14px; 
+        border-radius: 14px; 
+        border: 1px solid var(--border-glass); 
+        font-weight: 700; 
+        transition: 0.3s; 
+    }
+
+    /* CONTENEDOR DE TARJETAS (Estructura de lista) */
+    .contenedor-tareas-master { 
+        display: flex; 
+        flex-direction: column; 
+        gap: 16px; 
+        width: 100%; 
+        max-width: 550px; 
+        margin: 0 auto; 
+        padding-bottom: 50px; 
+    }
+
+    /* TARJETA DE TAREA INDIVIDUAL */
+    .tarea-card { 
+        display: grid; 
+        grid-template-columns: 50px 1fr 50px; 
+        align-items: center; 
+        background: var(--card-bg); 
+        padding: 14px 18px; 
+        border-radius: 16px; 
+        border: 1px solid var(--border-glass); 
+        border-left: 5px solid var(--t-color); 
+        gap: 12px; 
+        min-height: 80px; 
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative; 
+    }
+    
+    .tarea-card:hover { 
+        background: var(--card-hover); 
+        transform: translateY(-2px) scale(1.01); 
+        border-color: var(--accent); 
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+
+    /* INFO DENTRO DE LA TARJETA */
+    .card-info-zone { display: flex; flex-direction: column; text-align: left; overflow: hidden; }
+    .materia-tag { font-size: 0.65rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 3px; color: var(--t-color); }
+    .tema-title { margin: 0; font-size: 1rem; font-weight: 700; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .meta-data { display: flex; gap: 8px; color: var(--text-secondary); font-size: 0.7rem; margin-top: 4px; font-weight: 500; }
+    .priority-badge, .priority-tag { color: var(--accent); font-weight: 900; }
+
+    /* FILTROS Y NAVEGACIÓN */
+    .filter-scroll-container { 
+        display: flex; 
+        gap: 10px; 
+        overflow-x: auto; 
+        padding-bottom: 15px; 
+        margin-bottom: 15px; 
+        align-items: center; 
+    }
+    
+    .nav-filter-btn { 
+        padding: 9px 18px; 
+        border-radius: 12px; 
+        background: var(--card-bg); 
+        color: var(--text-primary); 
+        text-decoration: none; 
+        font-size: 0.8rem; 
+        font-weight: 700; 
+        border: 1px solid var(--border-glass); 
+        white-space: nowrap;
+    }
+    .nav-filter-btn.active { background: var(--accent); color: #000; border-color: var(--accent); }
+    .btn-trash-link, .trash-link { border-color: rgba(255, 68, 68, 0.4); color: #ff4444 !important; margin-left: auto; }
+
+    /* MENÚS Y DROPDOWNS */
+    .dropdown-btn { 
+        background: var(--card-bg); 
+        color: var(--text-primary); 
+        border: 1px solid var(--border-glass); 
+        padding: 10px 18px; 
+        border-radius: 12px; 
+        font-weight: 700; 
+        cursor: pointer; 
+        transition: 0.3s;
+    }
+    
+    .dropdown-content { 
+        display: none; 
+        position: absolute; 
+        right: 0; 
+        background: var(--dropdown-bg); 
+        min-width: 200px; 
+        border-radius: 16px; 
+        border: 1px solid var(--border-glass); 
+        z-index: 1000; 
+        overflow: hidden; 
+        box-shadow: 0 15px 35px rgba(0,0,0,0.2); 
+        margin-top: 8px; 
+        animation: fadeIn 0.2s ease;
+    }
+    .dropdown-content a { color: var(--text-primary); padding: 14px 20px; text-decoration: none; display: block; font-size: 0.85rem; font-weight: 600; }
+    .dropdown-content a:hover { background: var(--accent); color: #000; }
+    .menu-divider { border: 0; border-top: 1px solid var(--border-glass); margin: 5px 0; }
+
+    /* ZONA DE OPCIONES (LADO DERECHO) */
+    .card-options-zone { 
+        display: flex; 
+        flex-direction: column; 
+        gap: 8px; 
+        align-items: center; 
+        border-left: 1px solid var(--border-glass); 
+        padding-left: 10px; 
+    }
+    
+    .icon-btn { text-decoration: none; font-size: 1rem; opacity: 0.8; transition: 0.2s; color: var(--text-primary); }
+    .icon-btn:hover { opacity: 1; transform: scale(1.1); }
+
+    /* OTROS ESTADOS Y CLASES DE JS */
+    .empty-state { 
+        text-align: center; 
+        padding: 40px 20px; 
+        color: var(--text-secondary); 
+        border-radius: 20px; 
+        border: 1px dashed var(--border-glass); 
+        background: var(--card-bg);
+    }
+
+    .tarea-oculta, .tarea-extra {
+        display: none; /* Asegura que ambas clases comiencen ocultas */
+    }
+
+    /* Animación de entrada */
+    @keyframes fadeIn { 
+        from { opacity: 0; transform: translateY(10px); } 
+        to { opacity: 1; transform: translateY(0); } 
+    }
+
+        .ai-btn {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: var(--accent);
+        border: none;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        cursor: pointer;
+        font-size: 24px;
+        transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .ai-btn:hover { transform: scale(1.1) rotate(5deg); }
+
+    .ai-panel {
+        display: none;
+        position: absolute;
+        bottom: 75px;
+        right: 0;
+        width: 320px;
+        background: var(--dropdown-bg);
+        border: 1px solid var(--border-glass);
+        border-radius: 20px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+        overflow: hidden;
+        animation: slideUp 0.3s ease;
+    }
+
+    .ai-header {
+        background: var(--accent);
+        color: #000;
+        padding: 12px 18px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-weight: 800;
+    }
+
+    .ai-content {
+        padding: 18px;
+        max-height: 400px;
+        overflow-y: auto;
+        color: var(--text-primary);
+        font-size: 0.9rem;
+        line-height: 1.5;
+    }
+
+    .ai-task-item {
+        background: rgba(255,255,255,0.05);
+        padding: 10px;
+        border-radius: 10px;
+        margin-bottom: 8px;
+        border-left: 3px solid var(--accent);
+    }
+
+    @keyframes slideUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .loader {
+        border: 3px solid rgba(255,255,255,0.1);
+        border-top: 3px solid var(--accent);
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        animation: spin 1s linear infinite;
+        margin: 10px auto;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    .help-btn {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        border: 1px solid var(--border-glass);
+        color: white;
+        cursor: pointer;
+        font-size: 20px;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .help-btn:hover {
+        background: var(--accent);
+        color: black;
+        transform: translateY(-3px);
+    }
+    .help-modal {
+        display: none;
+        position: absolute;
+        bottom: 65px;
+        left: 0;
+        width: 280px;
+        background: var(--dropdown-bg);
+        border: 1px solid var(--border-glass);
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        overflow: hidden;
+        animation: fadeIn 0.3s ease;
+    }
+    .help-header {
+        background: rgba(255,255,255,0.05);
+        padding: 10px 15px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.85rem;
+        font-weight: bold;
+        border-bottom: 1px solid var(--border-glass);
+    }
+    .close-help {
+        background: none;
+        border: none;
+        color: white;
+        font-size: 20px;
+        cursor: pointer;
+    }
+    .help-body {
+        padding: 15px;
+    }
+    .help-step {
+        font-size: 0.8rem;
+        margin-bottom: 12px;
+        line-height: 1.4;
+        color: var(--text-primary);
+        padding-bottom: 8px;
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .help-step:last-child { border: none; }
+    .help-step strong { color: var(--accent); display: block; margin-bottom: 2px; }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .btn-vaciar {
+        background: rgba(255, 71, 71, 0.1);
+        color: #ff4747;
+        border: 1px solid #ff4747;
+        padding: 8px 15px;
+        border-radius: 10px;
+        text-decoration: none;
+        font-size: 0.85rem;
+        font-weight: bold;
+        transition: all 0.3s ease;
+    }
+    .btn-vaciar:hover {
+        background: #ff4747;
+        color: white;
+        box-shadow: 0 0 10px rgba(255, 71, 71, 0.3);
+    }
+</style>
+{% endblock %}

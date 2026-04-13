@@ -1,0 +1,89 @@
+{% extends 'layout.html' %} 
+{% block content %} 
+<div class="main-wrapper"> 
+     <div class="glass-card" style="text-align: center; max-width: 500px; position: relative;"> 
+         
+         <div class="profile-photo-container" style="margin: 0 auto 20px auto; width: 140px; height: 140px; position: relative;">
+             <div style="width: 140px; height: 140px; border-radius: 50%; border: 3px solid var(--accent); background: rgba(255,255,255,0.05); overflow: hidden; display: flex; align-items: center; justify-content: center; cursor: pointer;" onclick="toggleMenu()">
+                {% if user.foto_perfil %}
+                   <img src="{{ user.foto_perfil }}" alt="Foto de perfil" style="width: 100%; height: 100%; object-fit: cover;">
+                {% else %}
+                   <span style="font-size: 3.5rem; font-weight: 800; color: var(--accent);">{{ user.usuario[0].upper() }}</span>
+                {% endif %}
+             </div>
+
+             <div id="dropdown-perfil" style="display: none; position: absolute; top: 110%; left: 50%; transform: translateX(-50%); background: #1e293b; min-width: 180px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); z-index: 100; border-radius: 12px; border: 1px solid var(--glass-border); overflow: hidden;">
+                 <a href="#" onclick="abrirModalImagen()" style="color: white; padding: 12px 16px; text-decoration: none; display: block; font-size: 0.85rem; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.05);">Agrandar imagen</a>
+                 <a href="{{ url_for('editar_perfil') }}" style="color: white; padding: 12px 16px; text-decoration: none; display: block; font-size: 0.85rem; text-align: left;">Editar foto perfil</a>
+             </div>
+         </div>
+
+         <div style="display: inline-block; padding: 6px 15px; background: var(--success); border-radius: 10px; font-size: 0.7rem; font-weight: 900; color: #fff; margin-bottom: 15px;">USUARIO ACTIVO</div> 
+         
+         <h2 style="text-transform: uppercase; letter-spacing: 2px; margin-bottom: 20px; font-size: 1.6rem;">{{ user.usuario }}</h2> 
+
+         <div style="margin: 0 0 25px 0; padding: 15px; background: rgba(56, 189, 248, 0.05); border-radius: 16px; border: 1px solid rgba(56, 189, 248, 0.2); text-align: left;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <span style="font-weight: 800; color: var(--accent); font-size: 0.9rem;">NIVEL {{ nivel }}</span>
+                <span style="font-size: 0.75rem; font-weight: 700; background: var(--accent); color: #0f172a; padding: 2px 8px; border-radius: 6px;">{{ rango }}</span>
+            </div>
+            
+            <div style="width: 100%; height: 10px; background: rgba(255,255,255,0.1); border-radius: 10px; overflow: hidden;">
+                <div class="xp-bar-fill" style="--xp-width: {{ xp_barra }}%; width: {{ xp_barra }}%; height: 100%; background: var(--accent); box-shadow: 0 0 10px var(--accent); transition: width 0.5s ease;"></div>
+            </div>
+            
+            <div style="display: flex; justify-content: space-between; margin-top: 8px;">
+                <p style="font-size: 0.7rem; opacity: 0.6; margin: 0;">{{ xp_barra }} / 100 XP</p>
+                <p style="font-size: 0.7rem; opacity: 0.6; margin: 0;">Siguiente nivel</p>
+            </div>
+         </div>
+
+         <div style="text-align: left; background: rgba(255,255,255,0.02); padding: 20px; border-radius: 16px; border: 1px solid var(--glass-border); margin-bottom: 30px; position: relative;">
+             
+             <div style="position: absolute; top: 13px; right: 13px; text-align: center; background: rgba(255, 69, 0, 0.1); padding: 8px 12px; border-radius: 14px; border: 2px solid rgba(255, 69, 0, 0.3);">
+                <span style="font-size: 1.0rem; display: block;">🔥</span>
+                <p style="margin:0; font-size: 0.9rem; font-weight: 900; color: #ff4500;">{{ racha }} DÍAS</p>
+             </div>
+
+             <p style="margin-bottom: 10px; font-size: 0.95rem;"><strong style="color: var(--accent);">Email:</strong> {{ user.email }}</p>
+             <p style="margin-bottom: 10px; font-size: 0.95rem;"><strong style="color: var(--accent);">Cumpleaños:</strong> {{ user.cumpleanos if user.cumpleanos else 'No asignado' }}</p>
+             
+             {% if edad %}
+                <p style="font-size: 1.2rem; font-weight: 800; color: #fff; margin-top: 15px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 10px;">
+                    <strong style="color: var(--accent);">Edad:</strong> {{ edad }} años
+                </p>
+             {% endif %}
+         </div>
+         
+         <div style="display: flex; flex-direction: column; gap: 12px;"> 
+             <a href="{{ url_for('index') }}" class="btn-main" style="background: var(--accent); color: #000; font-weight: 800;">VOLVER AL TABLERO</a> 
+     </div> 
+</div>
+
+<div id="modalImagen" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:1000; align-items:center; justify-content:center; cursor: pointer;" onclick="this.style.display='none'">
+    <img src="{{ user.foto_perfil }}" style="max-width:90%; max-height:90%; border-radius:15px; border: 2px solid var(--accent);">
+</div>
+
+<script>
+    function toggleMenu() {
+        const menu = document.getElementById('dropdown-perfil');
+        menu.style.display = (menu.style.display === 'none' || menu.style.display === '') ? 'block' : 'none';
+    }
+
+    function abrirModalImagen() {
+        document.getElementById('modalImagen').style.display = 'flex';
+        document.getElementById('dropdown-perfil').style.display = 'none';
+    }
+
+    window.onclick = function(event) {
+        if (!event.target.closest('.profile-photo-container')) {
+            document.getElementById('dropdown-perfil').style.display = 'none';
+        }
+    }
+</script>
+
+<style>
+    .profile-menu a:hover { background: var(--accent) !important; color: black !important; }
+    .btn-main:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(56, 189, 248, 0.4); }
+</style>
+{% endblock %}

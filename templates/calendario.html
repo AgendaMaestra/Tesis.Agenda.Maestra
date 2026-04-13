@@ -1,0 +1,71 @@
+{% extends 'layout.html' %} 
+{% block content %} 
+<div class="main-wrapper"> 
+    <div class="glass-card" style="max-width: 900px; padding: 15px;"> 
+        <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 10px;">
+            <h2 style="color: var(--accent); font-size: 1.4rem;">Entregas</h2> 
+            <a href="{{ url_for('index') }}" style="color: var(--text-muted); text-decoration:none; font-weight:700; font-size:0.85rem; flex-shrink:0;">← Tablero</a>
+        </div>
+
+        <div id='calendar' 
+             data-eventos='{{ eventos | tojson | safe }}'
+             style="background: rgba(255,255,255,0.02); padding: 10px; border-radius: 14px; border: 1px solid var(--glass-border); width: 100%; overflow: hidden;">
+        </div>
+    </div> 
+</div> 
+
+<link href='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css' rel='stylesheet' />
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js'></script>
+<script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/locales/es.js'></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var calendarEl = document.getElementById('calendar');
+    if (!calendarEl) return;
+
+    var eventosData = [];
+    try {
+        var rawData = calendarEl.getAttribute('data-eventos');
+        if (rawData) {
+            eventosData = JSON.parse(rawData);
+        }
+    } catch (e) {
+        eventosData = [];
+    }
+
+    var calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: window.innerWidth < 640 ? 'listMonth' : 'dayGridMonth', // Cambia a lista en pantallas pequeñas
+        locale: 'es',
+        themeSystem: 'standard',
+        headerToolbar: {
+            left: 'prev,next today',
+            center: 'title',
+            right: window.innerWidth < 640 ? 'listMonth' : 'dayGridMonth,timeGridWeek,listMonth'
+        },
+        events: eventosData,
+        height: 'auto',
+        windowResize: function(view) {
+            if (window.innerWidth < 640) {
+                calendar.changeView('listMonth');
+            } else {
+                calendar.changeView('dayGridMonth');
+            }
+        }
+    });
+    
+    calendar.render();
+});
+</script>
+
+<style>
+.fc-theme-standard th, .fc-theme-standard td { border-color: var(--glass-border) !important; }
+.fc .fc-toolbar-title { color: var(--text); font-size: 1rem !important; font-weight: 800; }
+.fc .fc-button-primary { background-color: var(--glass) !important; border-color: var(--glass-border) !important; color: var(--text) !important; font-size: 0.8rem !important; }
+.fc .fc-button-primary:hover { background-color: var(--accent) !important; color: #0f172a !important; }
+.fc .fc-button-active { background-color: var(--accent) !important; color: #0f172a !important; }
+.fc-day-today { background: rgba(56, 189, 248, 0.1) !important; }
+.fc-event-title { font-weight: 700; font-size: 0.8rem; }
+.fc-list-event { background: transparent !important; }
+.fc-list-event:hover td { background: rgba(255,255,255,0.03) !important; }
+</style>
+{% endblock %}

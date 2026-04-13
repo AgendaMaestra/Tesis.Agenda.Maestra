@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='estilos.css') }}">
+    <title>Agenda Maestra</title>
+
+    <style>
+        /* ESTILOS BASE (MODO OSCURO POR DEFECTO) */
+        :root {
+            --bg-body: #0f172a;
+            --text-clock: #ffffff;
+            --btn-bg: rgba(255, 255, 255, 0.1);
+            --btn-text: #ffffff;
+            --btn-border: rgba(255, 255, 255, 0.2);
+            --accent: #38bdf8; /* Color celeste de tu logo */
+        }
+
+        /* ESTILOS MODO CLARO */
+        body.light-mode {
+            --bg-body: #f1f5f9;
+            --text-clock: #1e293b;
+            --btn-bg: #ffffff;
+            --btn-text: #1e293b;
+            --btn-border: #cbd5e1;
+        }
+
+        body {
+            background-color: var(--bg-body);
+            margin: 0;
+            transition: background-color 0.3s ease;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        /* RELOJ DIGITAL */
+        .digital-clock {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            padding: 8px 15px;
+            background: var(--btn-bg);
+            color: var(--text-clock);
+            border: 1px solid var(--btn-border);
+            border-radius: 10px;
+            font-family: monospace;
+            font-weight: bold;
+            font-size: 0.9rem;
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+        }
+
+        /* BOTÓN DE TEMA */
+        .theme-toggle {
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            padding: 8px 15px;
+            background: var(--btn-bg);
+            color: var(--text-clock);
+            border: 1px solid var(--btn-border);
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.8rem;
+            z-index: 1000;
+            transition: all 0.2s;
+            backdrop-filter: blur(5px);
+        }
+
+        .theme-toggle:hover {
+            background: var(--accent);
+            color: #000;
+            border-color: var(--accent);
+        }
+    </style>
+
+    <script>
+        function toggleTheme(){
+            document.body.classList.toggle("light-mode");
+            if(document.body.classList.contains("light-mode")){
+                localStorage.setItem("theme","light");
+            }else{
+                localStorage.setItem("theme","dark");
+            }
+        }
+
+        function updateClock() {
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            const clockElement = document.getElementById('clock');
+            if(clockElement) {
+                clockElement.innerText = hours + ':' + minutes + ':' + seconds;
+            }
+        }
+
+        window.onload = function(){
+            if(localStorage.getItem("theme") === "light"){
+                document.body.classList.add("light-mode");
+            }
+            updateClock();
+            setInterval(updateClock, 1000);
+        }
+    </script>
+</head>
+<body>
+    <div id="clock" class="digital-clock">00:00:00</div>
+    <button class="theme-toggle" onclick="toggleTheme()">Contraste</button>
+    <script src="{{ url_for('static', filename='js/assistant.js') }}"></script>
+    {% block content %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,334 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+:root {
+    --bg-dark: #0f172a;
+    --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+    --accent: #38bdf8;
+    --accent-hover: #0ea5e9;
+    --glass: rgba(30, 41, 59, 0.7);
+    --glass-border: rgba(255, 255, 255, 0.08);
+    --text: #f8fafc;
+    --text-muted: #94a3b8;
+    --error: #ff4757;
+    --success: #2ed573;
+    --warning: #ffa502;
+    --select-bg: #1e293b;
+}
+
+body.light-mode {
+    --bg-gradient: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+    --glass: rgba(255, 255, 255, 0.8);
+    --glass-border: rgba(0, 0, 0, 0.05);
+    --text: #0f172a;
+    --text-muted: #64748b;
+    --select-bg: #ffffff;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    transition: background 0.1s ease, transform 0.05s ease;
+}
+
+body {
+    background: var(--bg-gradient);
+    background-attachment: fixed;
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 16px;
+    -webkit-tap-highlight-color: transparent; /* Quita el flash azul al tocar en móvil */
+}
+
+.digital-clock {
+    position: fixed;
+    top: 15px;
+    right: 15px;
+    background: var(--glass);
+    padding: 8px 12px;
+    border-radius: 12px;
+    border: 1px solid var(--glass-border);
+    font-weight: 700;
+    font-size: 0.85rem;
+    z-index: 1000;
+    backdrop-filter: blur(10px);
+}
+
+.main-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 15px;
+    padding-top: 70px; /* Evita que el reloj tape contenido */
+}
+
+.glass-card {
+    background: var(--glass);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--glass-border);
+    border-radius: 24px;
+    padding: 25px;
+    width: 100%;
+    max-width: 600px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    text-align: left;
+}
+
+input[type="text"], input[type="password"], input[type="date"], input[type="email"], select {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--glass-border);
+    padding: 14px;
+    border-radius: 14px;
+    color: var(--text);
+    font-size: 1rem;
+    margin-bottom: 15px;
+    outline: none;
+    font-family: inherit;
+}
+
+select option {
+    background-color: var(--select-bg);
+    color: var(--text);
+}
+
+input:focus, select:focus {
+    border-color: var(--accent);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.btn-main {
+    width: 100%;
+    background: var(--accent);
+    color: #0f172a;
+    border: none;
+    padding: 16px;
+    border-radius: 16px;
+    font-size: 1rem;
+    font-weight: 800;
+    cursor: pointer;
+    box-shadow: 0 10px 25px -5px rgba(56, 189, 248, 0.3);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+}
+
+.btn-main:hover {
+    background: var(--accent-hover);
+}
+
+.btn-main:active {
+    transform: scale(0.98);
+}
+
+.task-item {
+    background: rgba(255, 255, 255, 0.03);
+    padding: 15px;
+    border-radius: 16px;
+    margin-bottom: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid var(--glass-border);
+    gap: 15px;
+}
+
+.task-item:hover {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.task-done {
+    opacity: 0.6;
+}
+
+.tag-materia {
+    background: var(--mat-color);
+    font-size: 11px;
+    padding: 5px 10px;
+    border-radius: 8px;
+    font-weight: 800;
+    color: white;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+    display: inline-block;
+}
+
+.tag-tipo {
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-weight: 800;
+    margin-left: 5px;
+    color: white;
+    text-transform: uppercase;
+}
+
+.tag-tipo.tarea { background: #64748b; }
+.tag-tipo.examen { background: #ef4444; }
+
+.priority-box {
+    margin: 15px 0;
+    background: rgba(255, 255, 255, 0.02);
+    padding: 16px;
+    border-radius: 16px;
+    border: 1px solid var(--glass-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    user-select: none;
+}
+
+.priority-box:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.priority-box.active {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: #ef4444;
+}
+
+.priority-toggle {
+    width: 44px;
+    height: 24px;
+    background: #334155;
+    border-radius: 20px;
+    position: relative;
+    transition: background 0.2s;
+    flex-shrink: 0;
+}
+
+.priority-box.active .priority-toggle {
+    background: #ef4444;
+}
+
+.priority-toggle::after {
+    content: '';
+    width: 18px;
+    height: 18px;
+    background: white;
+    border-radius: 50%;
+    position: absolute;
+    top: 3px;
+    left: 4px;
+    transition: transform 0.2s;
+}
+
+.priority-box.active .priority-toggle::after {
+    transform: translateX(18px);
+}
+
+.theme-toggle {
+    position: fixed;
+    top: 15px;
+    left: 15px;
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    color: var(--text);
+    padding: 10px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-weight: bold;
+    backdrop-filter: blur(10px);
+    z-index: 1000;
+}
+
+/* Responsividad mejorada para móviles */
+@media (max-width: 640px) {
+    .main-wrapper {
+        padding: 10px;
+        padding-top: 65px;
+    }
+
+    .glass-card {
+        padding: 20px 15px;
+        border-radius: 20px;
+    }
+
+    .task-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+
+    .task-item > div:last-child {
+        width: 100%;
+        justify-content: flex-end;
+        border-top: 1px solid var(--glass-border);
+        padding-top: 10px;
+    }
+
+    .btn-main {
+        padding: 14px;
+        font-size: 0.95rem;
+    }
+
+    .stats-info {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .chart-container {
+        max-width: 100%;
+    }
+}
+
+.estadisticas-card{
+    text-align:center;
+}
+
+.chart-container{
+    max-width:350px;
+    margin:auto;
+    margin-bottom:30px;
+}
+
+.stats-info{
+    display:flex;
+    gap:15px;
+    justify-content:space-between;
+}
+
+.stat-box{
+    flex:1;
+    background:rgba(255,255,255,0.05);
+    padding: 20px 15px;
+    border-radius:16px;
+    border:1px solid var(--glass-border);
+}
+
+.stat-number{
+    font-size:1.6rem;
+    font-weight:800;
+    display:block;
+}
+
+.stat-label{
+    font-size:0.8rem;
+    opacity:0.6;
+}
+
+/* Esto asegura que las tareas se pongan una al lado de la otra y no se estiren */
+.contenedor-tareas {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+    padding: 10px 0;
+    width: 100%;
+}
+
+/* Fuerza a que las tarjetas tengan un tamaño consistente */
+.tarea-card {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 180px;
+}
