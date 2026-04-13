@@ -1,22 +1,19 @@
-from flask import Flask, render_template, request, redirect, url_for, session, Response, flash
-from flask import Flask, render_template, request, redirect, url_for, session, Response, flash
-from flask import Flask, render_template, request, session, redirect, url_for, jsonify
-from flask import jsonify
+from flask import Flask, render_template, request, redirect, url_for, session, Response, flash, jsonify
 import mysql.connector
 from mysql.connector import pooling
 from werkzeug.security import generate_password_hash, check_password_hash
+import os
+import json
+import base64
 import hashlib
 from functools import wraps
-import json
-import os
-import base64
 from datetime import date, datetime, timedelta
+from datetime import date 
+from datetime import datetime 
+from datetime import datetime, timedelta 
 from dotenv import load_dotenv
 from flask_mail import Mail, Message
-from datetime import date
-from datetime import datetime
 from flask_mail import Message, Mail
-from datetime import datetime, timedelta
 
 load_dotenv()
 
@@ -79,34 +76,57 @@ def login_required(f):
 # ==========================================
 # SISTEMA DE EMAILS (BIENVENIDA Y NOTIFICACIONES)
 # ==========================================
+from datetime import datetime, timedelta
+from flask import render_template
+from flask_mail import Message
+
+# --- MOTOR DE ENVÍOS (Lógica de fondo) ---
+
+def enviar_correo(asunto, destinatario, plantilla_html):
+    """Función genérica para enviar correos HTML"""
+    try:
+        msg = Message(asunto, recipients=[destinatario])
+        msg.html = plantilla_html
+        mail.send(msg)
+    except Exception as e:
+        print(f"Error enviando correo: {e}")
+
+# --- FUNCIONES DE NOTIFICACIÓN ---
+
 def enviar_bienvenida(email_usuario, nombre_usuario):
+    """Envía el correo de bienvenida con el diseño avanzado y nuevas funciones"""
     try:
         msg = Message(
             f"¡Bienvenido a Agenda Maestra, {nombre_usuario}! 🚀",
             recipients=[email_usuario]
         )
-        msg.html = f"""
-        <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0f172a; color: #f8fafc; padding: 40px; border-radius: 20px; max-width: 600px; margin: auto;">
-            <h1 style="color: #38bdf8; text-align: center;">AGENDA<span style="color: #ffffff;">MAESTRA</span></h1>
-            <p style="font-size: 1.1rem; line-height: 1.6;">¡Hola <strong>{nombre_usuario}</strong>! Gracias por unirte a la plataforma de organización más avanzada.</p>
-            <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 15px; border: 1px solid #1e293b;">
-                <h3 style="color: #38bdf8; margin-top: 0;">¿Por qué usar Agenda Maestra?</h3>
-                <ul style="list-style: none; padding: 0;">
-                    <li style="margin-bottom: 10px;">⭐ <b>Prioridad IA:</b> Ordenamos tus tareas por urgencia real.</li>
-                    <li style="margin-bottom: 10px;">📈 <b>Gamificación:</b> Gana XP y sube de rango al completar deberes.</li>
-                    <li style="margin-bottom: 10px;">♻️ <b>Papelera:</b> Tus archivos borrados viven 2 días más por seguridad.</li>
-                </ul>
+        # Se intenta usar la plantilla profesional; si falla, usa el HTML embebido
+        try:
+            msg.html = render_template('emails/bienvenida.html', nombre=nombre_usuario)
+        except:
+            msg.html = f"""
+            <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0f172a; color: #f8fafc; padding: 40px; border-radius: 20px; max-width: 600px; margin: auto;">
+                <h1 style="color: #38bdf8; text-align: center;">AGENDA<span style="color: #ffffff;">MAESTRA</span></h1>
+                <p style="font-size: 1.1rem; line-height: 1.6;">¡Hola <strong>{nombre_usuario}</strong>! Gracias por unirte a la plataforma de organización más avanzada.</p>
+                <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 15px; border: 1px solid #1e293b;">
+                    <h3 style="color: #38bdf8; margin-top: 0;">¿Por qué usar Agenda Maestra?</h3>
+                    <ul style="list-style: none; padding: 0;">
+                        <li style="margin-bottom: 10px;">⭐ <b>Prioridad IA:</b> Ordenamos tus tareas por urgencia real.</li>
+                        <li style="margin-bottom: 10px;">📈 <b>Gamificación:</b> Gana XP y sube de rango al completar deberes.</li>
+                        <li style="margin-bottom: 10px;">♻️ <b>Papelera:</b> Tus archivos borrados viven 2 días más por seguridad.</li>
+                    </ul>
+                </div>
+                <p style="text-align: center; margin-top: 30px;">
+                    <a href="#" style="background: #38bdf8; color: #0f172a; padding: 12px 25px; border-radius: 10px; text-decoration: none; font-weight: bold;">EMPEZAR AHORA</a>
+                </p>
             </div>
-            <p style="text-align: center; margin-top: 30px;">
-                <a href="#" style="background: #38bdf8; color: #0f172a; padding: 12px 25px; border-radius: 10px; text-decoration: none; font-weight: bold;">EMPEZAR AHORA</a>
-            </p>
-        </div>
-        """
+            """
         mail.send(msg)
     except Exception as e:
         print(f"Error enviando bienvenida: {e}")
 
 def enviar_correo_notificacion(destinatario, usuario, tarea_tema, estado):
+    """Notifica cambios inmediatos en el estado de una tarea específica"""
     try:
         # Usamos el timestamp para que Gmail no agrupe los correos en hilos
         ahora = datetime.now().strftime("%H:%M:%S")
@@ -118,50 +138,83 @@ def enviar_correo_notificacion(destinatario, usuario, tarea_tema, estado):
     except Exception as e:
         print(f"Error enviando notificación: {e}")
 
-def enviar_correo(asunto, destinatario, plantilla_html):
-    try:
-        msg = Message(asunto, recipients=[destinatario])
-        msg.html = plantilla_html
-        mail.send(msg)
-    except Exception as e:
-        print(f"Error enviando correo: {e}")
-
-# --- 1. RECORDATORIO DE 2 DÍAS ---
 def verificar_recordatorios_proximos():
-    db = get_db()
-    cursor = db.cursor(dictionary=True)
+    """
+    Busca tareas que vencen en 2 días y avisa al usuario.
+    Incluye control de 'recordatorio_enviado' para evitar spam.
+    """
+    db = None
+    cursor = None
     try:
-        # Buscamos tareas que venzan en exactamente 2 días
+        db = get_db()
+        cursor = db.cursor(dictionary=True)
+        
+        # 1. Calculamos la fecha de dentro de 2 días
         fecha_objetivo = (datetime.now() + timedelta(days=2)).date()
         
+        # 2. Buscamos tareas que venzan en esa fecha, pendientes, no borradas
+        # y que NO hayan sido notificadas aún (recordatorio_enviado = 0)
         cursor.execute("""
             SELECT t.*, u.email, u.usuario 
             FROM tareas t 
             JOIN usuarios u ON t.usuario_id = u.id 
-            WHERE t.fecha = %s AND t.estado = 'pendiente' AND t.eliminado_at IS NULL
+            WHERE t.fecha = %s 
+            AND t.estado = 'pendiente' 
+            AND t.recordatorio_enviado = 0 
+            AND t.eliminado_at IS NULL
         """, (fecha_objetivo,))
         
         proximas = cursor.fetchall()
+        
         for tarea in proximas:
-            html = render_template('emails/recordatorio.html', tarea=tarea)
-            enviar_correo(f"⏰ Recordatorio: {tarea['tema']} vence en 2 días", tarea['email'], html)
+            try:
+                # 3. Renderizado y envío del correo
+                html = render_template('emails/recordatorio.html', tarea=tarea)
+                enviar_correo(f"⏰ Recordatorio: {tarea['tema']} vence en 2 días", tarea['email'], html)
+                
+                # 4. Marcamos como enviado para no repetir el correo en la próxima carga
+                cursor.execute("""
+                    UPDATE tareas 
+                    SET recordatorio_enviado = 1 
+                    WHERE id = %s
+                """, (tarea['id'],))
+                
+            except Exception as e_interno:
+                print(f"Error procesando tarea individual {tarea['id']}: {e_interno}")
+        
+        # 5. Confirmamos los cambios de los UPDATES en la base de datos
+        db.commit()
+        
+    except Exception as e:
+        print(f"Error en verificar_recordatorios_proximos: {e}")
     finally:
-        cursor.close()
-        db.close() # Vital para evitar el "Pool Exhausted"
+        # 6. Siempre cerramos los recursos para evitar saturar el pool de conexiones
+        if cursor: 
+            cursor.close()
+        if db: 
+            db.close()
 
 def notificar_logro(user_id, tipo_logro, valor):
-    db = get_db()
-    cursor = db.cursor(dictionary=True)
+    """Envía felicitaciones por alcanzar hitos, subir de nivel o racha"""
+    db = None
+    cursor = None
     try:
+        db = get_db()
+        cursor = db.cursor(dictionary=True)
         cursor.execute("SELECT usuario, email FROM usuarios WHERE id = %s", (user_id,))
         user = cursor.fetchone()
         
         if user:
-            html = render_template('emails/logro.html', usuario=user['usuario'], tipo=tipo_logro, valor=valor)
+            html = render_template('emails/logro.html', 
+                                   usuario=user['usuario'], 
+                                   tipo=tipo_logro, 
+                                   valor=valor)
             enviar_correo(f"🎉 ¡Felicidades! Nuevo logro alcanzado: {tipo_logro}", user['email'], html)
+    except Exception as e:
+        print(f"Error en notificar_logro: {e}")
     finally:
-        cursor.close()
-        db.close()
+        if cursor: cursor.close()
+        if db: db.close()
 
 # ==========================================
 # LÓGICA DE NIVELES Y GAMIFICACIÓN
@@ -303,10 +356,11 @@ def index():
     db = None
     cursor = None
     try:
+        # 1. Inicialización y Limpieza de papelera (Automática)
         db = get_db()
         cursor = db.cursor(dictionary=True)
         
-        # 1. Limpieza de papelera (Automática)
+        # Eliminamos tareas que llevan más de 2 días en la papelera
         cursor.execute("DELETE FROM tareas WHERE eliminado_at < NOW() - INTERVAL 2 DAY")
         db.commit()
 
@@ -314,8 +368,11 @@ def index():
         cursor.execute("SELECT usuario, email FROM usuarios WHERE id=%s", (session['user_id'],))
         user_data = cursor.fetchone()
 
-        # 3. Verificación de recordatorios (¡OJO AQUÍ!)
-        # Si esta función abre una conexión interna y no la cierra, también agota el pool.
+        # 3. VERIFICACIÓN DE RECORDATORIOS (LLAMADA CRÍTICA)
+        # Se ejecutan ambas verificaciones para asegurar que no se pierda ninguna notificación.
+        # Asegúrate de que estas funciones cierren sus propias conexiones internas.
+        verificar_recordatorios_proximos() 
+        
         if user_data and user_data['email']:
             verificar_recordatorios_pendientes(session['user_id'], user_data['email'])
 
@@ -325,13 +382,14 @@ def index():
         ver_hechas = request.args.get('ver_hechas', '0')
         buscar = request.args.get('buscar', '') 
 
-        # 5. Construcción de Query
+        # 5. Construcción de Query Dinámica
         if ver_papelera == '1':
             query = "SELECT * FROM tareas WHERE usuario_id=%s AND eliminado_at IS NOT NULL"
         else:
             query = "SELECT * FROM tareas WHERE usuario_id=%s AND eliminado_at IS NULL"
         
         params = [session['user_id']]
+        
         if tipo_filtro:
             query += " AND tipo=%s"
             params.append(tipo_filtro)
@@ -348,13 +406,16 @@ def index():
 
         query += " ORDER BY fecha ASC"
 
-        # 6. Ejecución y formateo
+        # 6. Ejecución y formateo de datos
         cursor.execute(query, tuple(params))
         tareas = cursor.fetchall()
 
         for t in tareas:
+            # Asignación de color si no existe
             if not t.get('color'):
                 t['color'] = string_to_color(t['materia'])
+            
+            # Formateo de hora (Manejo de timedelta para MySQL)
             if t['hora_entrega']:
                 if isinstance(t['hora_entrega'], timedelta):
                     total_seconds = int(t['hora_entrega'].total_seconds())
@@ -364,7 +425,7 @@ def index():
                 else:
                     t['hora_entrega'] = str(t['hora_entrega'])[:5]
 
-        # 7. Renderizado (Los datos se pasan al HTML antes de cerrar la DB)
+        # 7. Renderizado (Se pasan todos los parámetros solicitados)
         return render_template('index.html', 
                                tareas=tareas, 
                                usuario=user_data['usuario'] if user_data else "Usuario", 
@@ -375,14 +436,14 @@ def index():
     
     except Exception as e:
         print(f"Error crítico en index: {e}")
-        return f"Error interno: {e}", 500
+        return f"Error interno en la agenda: {e}", 500
         
     finally:
-        # ESTE BLOQUE ES EL QUE LIBERA EL POOL
+        # ESTE BLOQUE ES VITAL: LIBERA EL POOL DE CONEXIONES
         if cursor:
             cursor.close()
         if db:
-            db.close() # <--- OBLIGATORIO
+            db.close() # OBLIGATORIO para evitar "Pool Exhausted"
 
 @app.route('/ai_analisis')
 @login_required
@@ -577,8 +638,9 @@ def completar(id):
     cursor = db.cursor(dictionary=True)
     try:
         # 1. Obtener la tarea y validar que pertenezca al usuario logueado
+        # Obtenemos también el XP actual del usuario para calcular si sube de nivel
         cursor.execute("""
-            SELECT t.*, u.email, u.usuario FROM tareas t 
+            SELECT t.*, u.email, u.usuario, u.xp as xp_actual FROM tareas t 
             JOIN usuarios u ON t.usuario_id = u.id 
             WHERE t.id=%s AND t.usuario_id=%s
         """, (id, session['user_id']))
@@ -589,29 +651,54 @@ def completar(id):
             nuevo_estado = 'pendiente' if data['estado'] == 'hecha' else 'hecha'
             puntos = 50 if nuevo_estado == 'hecha' else -50
             
+            # --- LÓGICA DE NIVEL (EJEMPLO) ---
+            # Calculamos niveles basados en rangos de 500 XP
+            xp_antes = data['xp_actual']
+            xp_despues = max(0, xp_antes + puntos)
+            nivel_antes = (xp_antes // 500) + 1
+            nuevo_nivel = (xp_despues // 500) + 1
+            subio_de_nivel = nuevo_nivel > nivel_antes
+            # ---------------------------------
+
             # 3. Ejecutar actualizaciones dentro de una transacción
             cursor.execute("UPDATE tareas SET estado=%s WHERE id=%s", (nuevo_estado, id))
-            cursor.execute("UPDATE usuarios SET xp=GREATEST(0, xp+%s) WHERE id=%s", (puntos, session['user_id']))
+            cursor.execute("UPDATE usuarios SET xp=%s WHERE id=%s", (xp_despues, session['user_id']))
             
-            # Confirmar cambios en la base de datos
+            # Confirmar cambios en la base de datos antes de disparar correos
             db.commit()
 
-            # 4. Notificación por correo (solo si se completa y hay email)
-            if nuevo_estado == 'hecha' and data.get('email'):
+            # 4. Notificaciones y Logros
+            if nuevo_estado == 'hecha':
                 try:
-                    enviar_correo_notificacion(data['email'], data['usuario'], data['tema'], "COMPLETADA")
+                    # Notificación estándar de tarea completada
+                    if data.get('email'):
+                        enviar_correo_notificacion(data['email'], data['usuario'], data['tema'], "COMPLETADA")
+                    
+                    # LLAMADA CRÍTICA: Si subió de nivel, disparamos el correo de logro
+                    if subio_de_nivel:
+                        notificar_logro(session['user_id'], "Nivel", nuevo_nivel)
+                        flash(f"¡Felicidades! Alcanzaste el nivel {nuevo_nivel} 🏆", "success")
+                    else:
+                        flash(f"Tarea completada. +50 XP", "info")
+                
                 except Exception as mail_error:
-                    # Si falla el mail, no queremos que se rompa la app ni el commit
-                    print(f"Error enviando correo: {mail_error}")
+                    # Si falla el mail, no queremos que se rompa la app
+                    print(f"Error enviando notificaciones: {mail_error}")
+            else:
+                flash("Tarea marcada como pendiente.", "warning")
 
     except Exception as e:
         # Si algo falla en la DB, deshacemos los cambios para evitar datos corruptos
-        db.rollback()
+        if db:
+            db.rollback()
         print(f"Error crítico en completar: {e}")
+        flash("Ocurrió un error al actualizar la tarea.", "danger")
     finally:
         # Cerramos siempre las conexiones para no saturar el servidor MySQL
-        cursor.close()
-        db.close()
+        if cursor:
+            cursor.close()
+        if db:
+            db.close()
         
     return redirect(request.referrer or url_for('index'))
 
