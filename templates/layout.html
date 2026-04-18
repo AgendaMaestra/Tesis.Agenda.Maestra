@@ -73,6 +73,19 @@
             color: #000;
             border-color: var(--accent);
         }
+        /* Clase maestra para el Modo Enfoque */
+    body.modo-enfoque-activo .tarea-card:not(.importante),
+    body.modo-enfoque-activo .filter-scroll-container > *:not(#btn-enfoque),
+    body.modo-enfoque-activo div[style*="grid-template-columns: 1fr 1fr"],
+    body.modo-enfoque-activo #btn-toggle-tareas,
+    body.modo-enfoque-activo .sub-title {
+        display: none !important;
+    }
+
+    /* Aseguramos que el botón de enfoque se vea bien siempre */
+    #btn-enfoque {
+        transition: all 0.3s ease;
+    }
     </style>
 
     <script>

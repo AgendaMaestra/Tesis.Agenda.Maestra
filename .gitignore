@@ -1,7 +1,6 @@
 # --- Entornos Virtuales ---
 venv/
 env/
-ENV/
 .env
 .venv/
 
@@ -12,32 +11,26 @@ __pycache__/
 *.so
 .Python
 
-# --- Base de Datos ---
-*.db
-*.sqlite
-# Si descargas backups de MySQL, ignóralos:
-*.sql
-
 # --- Archivos de Configuración Sensibles ---
-# ¡MUY IMPORTANTE! Aquí es donde guardas tus contraseñas de Gmail y DB
+# ¡CRÍTICO! Nunca borres estas líneas
 .env
 instance/
 config.py
-!config.example.py
+
+# --- Base de Datos ---
+*.db
+*.sqlite
+# Ignorar volcados de MySQL si los descargas localmente
+*.sql
 
 # --- IDEs y Editores ---
 .vscode/
 .idea/
 *.swp
 *.swo
-
-# --- Sistema Operativo ---
 .DS_Store
 Thumbs.db
-desktop.ini
 
-# --- Flask / Logs ---
-.webassets-cache
-instance/
-.pytest_cache/
+# --- Flask Logs ---
 *.log
+.webassets-cache

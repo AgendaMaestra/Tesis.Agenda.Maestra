@@ -52,6 +52,23 @@
     <a href="{{ url_for('index', tipo_filtro='examen', ver_hechas=ver_hechas) }}" class="nav-filter-btn {{ 'active' if request.args.get('tipo_filtro') == 'examen' }}">Exámenes</a>
 
     {% if ver_papelera != 1 %}
+<button onclick="toggleEnfoque()" id="btn-enfoque" class="nav-filter-btn" 
+    style="background: rgba(56, 189, 248, 0.1); 
+           color: var(--accent); 
+           border: 1px solid var(--accent); 
+           cursor: pointer; 
+           white-space: nowrap; 
+           padding: 0 15px; 
+           height: 32px; 
+           display: flex; 
+           align-items: center; 
+           justify-content: center; 
+           flex-shrink: 0;">
+    Modo Enfoque
+</button>
+{% endif %}
+
+    {% if ver_papelera != 1 %}
         <a href="{{ url_for('index', papelera=1) }}" class="nav-filter-btn trash-link" style="margin-left: auto; color: #ff4747;">
              Papelera
         </a>
@@ -70,8 +87,8 @@
         <div class="contenedor-tareas-master">
             {% if tareas %}
                 {% for tarea in tareas %}
-                    <div class="tarea-card {{ 'tarea-extra' if loop.index > 3 }}" 
-                         style="--t-color: {{ tarea.color | safe }}; {{ 'display: none;' if loop.index > 3 }}">
+                    <div class="tarea-card {{ 'importante' if tarea.importante == 1 }} {{ 'tarea-extra' if loop.index > 3 }}" 
+                    style="--t-color: {{ tarea.color | safe }}; {{ 'display: none;' if loop.index > 3 and not request.args.get('ver_todo') }}">
                         
                         <div class="card-action-zone">
                             <a href="{{ url_for('completar', id=tarea.id) }}" class="status-icon" style="text-decoration:none; font-size:1.2rem;">
@@ -91,13 +108,26 @@
                         </div>
 
                         <div class="card-options-zone">
-                            {% if ver_papelera == 1 %}
-                                <a href="{{ url_for('restaurar', id=tarea.id) }}" title="Restaurar" style="text-decoration:none;">🔄</a>
-                            {% else %}
-                                <a href="{{ url_for('editar', id=tarea.id) }}" class="icon-btn" title="Editar" style="text-decoration:none;">📝</a>
-                                <a href="{{ url_for('eliminar', id=tarea.id) }}" class="icon-btn" onclick="return confirm('¿Mover a la papelera por 2 días?')" title="Eliminar" style="text-decoration:none;">🗑️</a>
-                            {% endif %}
-                        </div>
+    {% if ver_papelera == 1 %}
+        <a href="{{ url_for('restaurar', id=tarea.id) }}" 
+           title="Restaurar tarea" 
+           style="text-decoration:none; font-size: 1.2rem;">🔄</a>
+           
+        {# Opcional: Podrías añadir un botón de borrado individual permanente aquí si quisieras #}
+        
+    {% else %}
+        <a href="{{ url_for('editar', id=tarea.id) }}" 
+           class="icon-btn" 
+           title="Editar" 
+           style="text-decoration:none;">📝</a>
+           
+        <a href="{{ url_for('eliminar', id=tarea.id) }}" 
+           class="icon-btn" 
+           onclick="return confirm('¿Mover a la papelera? Se guardará por 2 días.')" 
+           title="Eliminar" 
+           style="text-decoration:none;">🗑️</a>
+    {% endif %}
+</div>
                     </div>
                 {% endfor %}
 
@@ -114,50 +144,96 @@
         </div>
     </div> 
     <div id="ai-assistant-container" style="position: fixed; bottom: 20px; right: 20px; z-index: 9999;">
-    <button class="ai-btn" onclick="toggleAssistant()" title="Consultar Asistente IA">
-        <span class="ai-icon">🤖</span>
+    <button class="ai-btn" onclick="toggleAssistant(); analizarPrioridades();" title="Consultar Asistente IA">
+        <div class="robot-wrapper">
+            {% set nivel = ((user_xp | default(0)) // 500) + 1 %}
+            
+            <div class="aura-nivel lvl-{{ nivel }}"></div>
+            
+            <div class="robot-avatar lvl-{{ nivel }}">
+                {% if nivel < 3 %}
+                    🤖
+                {% elif nivel < 6 %}
+                    🦾
+                {% else %}
+                    🚀
+                {% endif %}
+            </div>
+            <span class="lvl-badge">Nivel {{ nivel }}</span>
+        </div>
     </button>
 
-    <div id="ai-panel" class="ai-panel">
+    <div id="ai-panel" class="ai-panel" style="display:none;">
         <div class="ai-header">
-            <h3>Asistente Maestro</h3>
-            <button onclick="toggleAssistant()" style="background:none; border:none; color:white; cursor:pointer;">✕</button>
+            <div style="display:flex; align-items:center; gap:8px;">
+                <span class="status-dot"></span>
+                <span style="font-weight: 800; font-size: 0.9rem; letter-spacing: 0.5px;">SISTEMA CORE</span>
+            </div>
+            <button onclick="toggleAssistant()" class="close-ai">✕</button>
         </div>
+        
         <div id="ai-content" class="ai-content">
-            <p>Analizando tus tareas pendientes...</p>
-            <div class="loader"></div>
+            <div class="scanner-line"></div>
+            <div class="loading-text">
+                <span class="dots">Interpretando datos...</span>
+            </div>
         </div>
     </div>
 </div>
 
 <div id="help-container" style="position: fixed; bottom: 20px; left: 20px; z-index: 9999;">
-    <button class="help-btn" onclick="toggleHelp()" title="Guía de uso">
+    <button class="help-btn pulse" onclick="toggleHelp()" title="Guía de uso">
         <span class="help-icon">❓</span>
     </button>
-
-    <div id="help-modal" class="help-modal">
+    <div id="help-modal" class="help-modal" style="display: none;">
         <div class="help-header">
-            <span>Guía Rápida: Agenda Maestra</span>
+            <span>Centro de Ayuda</span>
             <button onclick="toggleHelp()" class="close-help">×</button>
         </div>
         <div class="help-body">
             <div class="help-step">
-                <strong>Nuevo Elemento:</strong> Crea tareas o exámenes indicando materia y fecha.
+                <strong>Gestión de Tareas</strong>
+                <p>Usa "Nuevo Elemento" para organizar materias. Recuerda marcar las estrellas ★ para obtener el <b>multiplicador x1.5</b>.</p>
             </div>
             <div class="help-step">
-                <strong>Papelera:</strong> Las tareas eliminadas se guardan 2 días antes de borrarse para siempre.
+                <strong>Recuperación (48h)</strong>
+                <p>¿Borraste algo por error? Tienes 2 días en la Papelera antes del borrado definitivo.</p>
             </div>
             <div class="help-step">
-                <strong>Rachas y Niveles:</strong> Mantén tu racha activa completando tareas diariamente para subir de nivel.
+                <strong>Sistema de Rachas</strong>
+                <p>Completa al menos una tarea al día para mantener tu fuego activo. ¡Si fallas un día, la racha vuelve a 0!</p>
             </div>
             <div class="help-step">
-                <strong>Asistente IA:</strong> Usa el botón de la derecha para recibir un análisis de tus prioridades.
-            </div>
+                <strong>Asistente Estratégico</strong>
+                <p>El botón del robot analiza tus fechas de entrega y te dice por dónde empezar hoy.</p>
+            </div>            
+            <a href="{{ url_for('logros') }}" class="btn-help-action">Ver mis logros</a>
+        </div>
+    </div>
+</div>
         </div>
     </div>
 </div>
 </div>
 <script>
+function toggleEnfoque() {
+    const body = document.body;
+    const btn = document.getElementById('btn-enfoque');
+    
+    // Alternamos la clase en el body
+    body.classList.toggle('modo-enfoque-activo');
+
+    // Cambiamos el aspecto del botón según el estado
+    if (body.classList.contains('modo-enfoque-activo')) {
+        btn.innerHTML = "Ver Todo";
+        btn.style.background = "var(--accent)";
+        btn.style.color = "#0f172a";
+    } else {
+        btn.innerHTML = "Modo Enfoque";
+        btn.style.background = "rgba(56, 189, 248, 0.1)";
+        btn.style.color = "var(--accent)";
+    }
+}
     /**
      * Alterna la visibilidad del menú de opciones adicionales.
      */
@@ -231,6 +307,8 @@
     }
 </script>
 <style>
+    
+
     /* SISTEMA DE VARIABLES DINÁMICAS (MODO OSCURO / CLARO) */
     :root {
         /* Configuración por defecto (Dark Mode) */

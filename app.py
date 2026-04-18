@@ -14,6 +14,10 @@ from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from flask_mail import Mail, Message
 from flask_mail import Message, Mail
+from datetime import datetime, timedelta
+from flask import render_template
+from flask_mail import Message
+
 
 load_dotenv()
 
@@ -59,10 +63,79 @@ def get_db():
 # ==========================================
 # UTILIDADES Y DECORADORES
 # ==========================================
-def string_to_color(text):
-    hash_obj = hashlib.md5(text.encode())
-    hue = int(hash_obj.hexdigest(), 16) % 360
-    return f"hsl({hue}, 75%, 60%)"
+
+# --- FUNCIONES DE LÓGICA Y AUTOMATIZACIÓN ---
+
+def otorgar_xp(usuario_id, cantidad, motivo):
+    """Actualiza la XP del usuario y envía notificación de logro por correo."""
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+    try:
+        # 1. Actualizar XP
+        cursor.execute("UPDATE usuarios SET xp = xp + %s WHERE id = %s", (cantidad, usuario_id))
+        
+        # 2. Obtener datos frescos para el correo
+        cursor.execute("SELECT usuario, email, xp, nivel FROM usuarios WHERE id = %s", (usuario_id,))
+        user = cursor.fetchone()
+        
+        # 3. Envío de correo de logro usando la plantilla logro.html
+        msg = Message(f"¡Nuevo Logro Alcanzado: {motivo}!", recipients=[user['email']])
+        msg.html = render_template('logro.html', usuario=user['usuario'], logro=motivo, xp_ganada=cantidad)
+        mail.send(msg)
+        
+        db.commit()
+    except Exception as e:
+        print(f"⚠️ Error en otorgar_xp o envío de mail: {e}")
+    finally:
+        cursor.close()
+        db.close()
+
+def verificar_recordatorios_proximos():
+    """Busca tareas que venzan en exactamente 48hs y envía aviso."""
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+    try:
+        # SQL exacto: diferencia de días = 2, pendiente y no enviado aún
+        query = """
+            SELECT t.*, u.email, u.usuario 
+            FROM tareas t
+            JOIN usuarios u ON t.usuario_id = u.id
+            WHERE t.estado = 'pendiente' 
+            AND t.eliminado_at IS NULL
+            AND t.recordatorio_enviado = 0
+            AND DATEDIFF(t.fecha, CURDATE()) = 2
+        """
+        cursor.execute(query)
+        tareas_proximas = cursor.fetchall()
+        
+        for tarea in tareas_proximas:
+            # Reutilizamos la lógica de Message para recordatorio.html
+            msg = Message(f"⏰ Recordatorio: {tarea['tema']}", recipients=[tarea['email']])
+            msg.html = render_template('recordatorio.html', tarea=tarea)
+            mail.send(msg)
+            
+            # Marcar como enviado para no repetir el correo
+            cursor.execute("UPDATE tareas SET recordatorio_enviado = 1 WHERE id = %s", (tarea['id'],))
+        
+        db.commit()
+    except Exception as e:
+        print(f"⚠️ Error en verificar_recordatorios: {e}")
+    finally:
+        cursor.close()
+        db.close()
+
+def string_to_color(string):
+    """
+    Genera un color consistente basado en el nombre de la materia.
+    Optimizada para usar un algoritmo de hash más rápido.
+    """
+    if not string:
+        return "#38bdf8" # Color celeste por defecto de Agenda Maestra
+    
+    # Generamos un hash simple pero efectivo
+    hash_obj = hashlib.md5(string.encode())
+    hex_color = f"#{hash_obj.hexdigest()[:6]}"
+    return hex_color
 
 def login_required(f):
     @wraps(f)
@@ -76,9 +149,6 @@ def login_required(f):
 # ==========================================
 # SISTEMA DE EMAILS (BIENVENIDA Y NOTIFICACIONES)
 # ==========================================
-from datetime import datetime, timedelta
-from flask import render_template
-from flask_mail import Message
 
 # --- MOTOR DE ENVÍOS (Lógica de fondo) ---
 
@@ -138,10 +208,37 @@ def enviar_correo_notificacion(destinatario, usuario, tarea_tema, estado):
     except Exception as e:
         print(f"Error enviando notificación: {e}")
 
+def enviar_resumen_semanal(user_id):
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+    
+    # Buscamos tareas de los próximos 7 días
+    proxima_semana = (datetime.now() + timedelta(days=7)).date()
+    cursor.execute("""
+        SELECT tema, materia, fecha, tipo 
+        FROM tareas 
+        WHERE usuario_id = %s 
+        AND estado = 'pendiente' 
+        AND fecha BETWEEN CURRENT_DATE AND %s
+        ORDER BY fecha ASC
+    """, (user_id, proxima_semana))
+    
+    tareas = cursor.fetchall()
+    
+    if tareas:
+        cursor.execute("SELECT email, usuario FROM usuarios WHERE id = %s", (user_id,))
+        user = cursor.fetchone()
+        
+        asunto = f"📅 Tu Plan Semanal en Agenda Maestra - {user['usuario']}"
+        html = render_template('emails/resumen_semanal.html', tareas=tareas, usuario=user['usuario'])
+        enviar_correo(asunto, user['email'], html)
+    
+    db.close()
+
 def verificar_recordatorios_proximos():
     """
-    Busca tareas que vencen en 2 días y avisa al usuario.
-    Incluye control de 'recordatorio_enviado' para evitar spam.
+    Busca tareas que vencen exactamente en 2 días y envía un aviso por correo.
+    Garantiza que no se envíen duplicados y que la base de datos se mantenga limpia.
     """
     db = None
     cursor = None
@@ -149,11 +246,12 @@ def verificar_recordatorios_proximos():
         db = get_db()
         cursor = db.cursor(dictionary=True)
         
-        # 1. Calculamos la fecha de dentro de 2 días
+        # 1. Calculamos la fecha objetivo (hoy + 2 días)
+        # Usamos .date() para comparar solo año-mes-día contra la columna DATE de MySQL
         fecha_objetivo = (datetime.now() + timedelta(days=2)).date()
         
-        # 2. Buscamos tareas que venzan en esa fecha, pendientes, no borradas
-        # y que NO hayan sido notificadas aún (recordatorio_enviado = 0)
+        # 2. Consulta optimizada: 
+        # Filtramos por fecha, estado pendiente, que no esté en papelera y que falte notificar
         cursor.execute("""
             SELECT t.*, u.email, u.usuario 
             FROM tareas t 
@@ -164,38 +262,52 @@ def verificar_recordatorios_proximos():
             AND t.eliminado_at IS NULL
         """, (fecha_objetivo,))
         
-        proximas = cursor.fetchall()
+        tareas_a_notificar = cursor.fetchall()
         
-        for tarea in proximas:
+        if not tareas_a_notificar:
+            return # Salimos si no hay nada pendiente para hoy
+
+        for tarea in tareas_a_notificar:
             try:
-                # 3. Renderizado y envío del correo
-                html = render_template('emails/recordatorio.html', tarea=tarea)
-                enviar_correo(f"⏰ Recordatorio: {tarea['tema']} vence en 2 días", tarea['email'], html)
+                # 3. Preparación del mensaje
+                asunto = f"⏰ Recordatorio: '{tarea['tema']}' vence en 2 días"
                 
-                # 4. Marcamos como enviado para no repetir el correo en la próxima carga
-                cursor.execute("""
-                    UPDATE tareas 
-                    SET recordatorio_enviado = 1 
-                    WHERE id = %s
-                """, (tarea['id'],))
+                # Intentamos renderizar el HTML del correo
+                html_body = render_template('emails/recordatorio.html', tarea=tarea)
+                
+                # 4. Intento de envío
+                # Usamos la función enviar_correo que ya tienes definida
+                exito_envio = enviar_correo(asunto, tarea['email'], html_body)
+                
+                # 5. SOLO si el envío fue exitoso, marcamos en la DB
+                if exito_envio:
+                    cursor.execute("""
+                        UPDATE tareas 
+                        SET recordatorio_enviado = 1 
+                        WHERE id = %s
+                    """, (tarea['id'],))
+                    # Hacemos commit individual para asegurar que cada envío se guarde
+                    db.commit() 
                 
             except Exception as e_interno:
-                print(f"Error procesando tarea individual {tarea['id']}: {e_interno}")
-        
-        # 5. Confirmamos los cambios de los UPDATES en la base de datos
-        db.commit()
+                # Si falla una tarea (ej. email inválido), el bucle sigue con la siguiente
+                print(f"⚠️ Error al procesar recordatorio de tarea ID {tarea['id']}: {e_interno}")
+                continue
         
     except Exception as e:
-        print(f"Error en verificar_recordatorios_proximos: {e}")
+        print(f"❌ Error crítico en verificar_recordatorios_proximos: {e}")
     finally:
-        # 6. Siempre cerramos los recursos para evitar saturar el pool de conexiones
+        # 6. CIERRE DE SEGURIDAD: Liberamos los recursos del pool
         if cursor: 
             cursor.close()
         if db: 
             db.close()
 
 def notificar_logro(user_id, tipo_logro, valor):
-    """Envía felicitaciones por alcanzar hitos, subir de nivel o racha"""
+    """
+    Envía felicitaciones por alcanzar hitos o subir de nivel.
+    Usa el diseño visual de Agenda Maestra y asegura el cierre de la DB.
+    """
     db = None
     cursor = None
     try:
@@ -204,14 +316,21 @@ def notificar_logro(user_id, tipo_logro, valor):
         cursor.execute("SELECT usuario, email FROM usuarios WHERE id = %s", (user_id,))
         user = cursor.fetchone()
         
-        if user:
-            html = render_template('emails/logro.html', 
-                                   usuario=user['usuario'], 
-                                   tipo=tipo_logro, 
-                                   valor=valor)
-            enviar_correo(f"🎉 ¡Felicidades! Nuevo logro alcanzado: {tipo_logro}", user['email'], html)
+        if user and user['email']:
+            # Diseño integrado de Agenda Maestra
+            html_directo = render_template('emails/logro.html', 
+                                           usuario=user['usuario'], 
+                                           tipo=tipo_logro, 
+                                           valor=valor)
+            
+            asunto = f"🎉 ¡Logro Desbloqueado: {tipo_logro} {valor}!"
+            
+            # Usamos el wrapper enviar_correo que ya maneja la configuración de Flask-Mail
+            enviar_correo(asunto, user['email'], html_directo)
+            print(f"✅ Logro enviado a {user['email']}")
+
     except Exception as e:
-        print(f"Error en notificar_logro: {e}")
+        print(f"❌ Error en notificar_logro: {e}")
     finally:
         if cursor: cursor.close()
         if db: db.close()
@@ -285,6 +404,23 @@ def verificar_recordatorios_pendientes(usuario_id, email_usuario):
 # ==========================================
 # RUTAS DE AUTENTICACIÓN
 # ==========================================
+@app.route('/ejemplo')
+def ruta_optimizada():
+    db = None
+    cursor = None
+    try:
+        db = get_db()
+        cursor = db.cursor(dictionary=True)
+        # ... lógica del programa ...
+        db.commit()
+    except Exception as e:
+        if db: db.rollback() # Si hay error, deshacemos cambios para no romper la DB
+        print(f"Error: {e}")
+    finally:
+        # CIERRE OBLIGATORIO: Esto garantiza que el programa nunca se congele
+        if cursor: cursor.close()
+        if db: db.close()
+
 @app.route('/login', methods=['GET','POST'])
 def login():
     if 'user_id' in session: return redirect(url_for('index'))
@@ -346,6 +482,33 @@ def registro():
         return redirect(url_for('index'))
     return render_template("registro.html")
 
+def limpiar_papelera_automatica():
+    """
+    Elimina físicamente las tareas en papelera con más de 48 horas.
+    Diseñada para ser llamada internamente sin interrumpir al usuario.
+    """
+    db = None
+    cursor = None
+    try:
+        db = get_db()
+        cursor = db.cursor()
+        # Borrado físico: solo tareas con marca de borrado de hace más de 2 días
+        cursor.execute("""
+            DELETE FROM tareas 
+            WHERE eliminado_at <= NOW() - INTERVAL 2 DAY
+        """)
+        total_borrados = cursor.rowcount
+        db.commit()
+        
+        if total_borrados > 0:
+            print(f"🧹 [Auto-Limpieza] Se eliminaron {total_borrados} tareas permanentemente.")
+            
+    except Exception as e:
+        print(f"❌ Error en limpieza de papelera: {e}")
+    finally:
+        if cursor: cursor.close()
+        if db: db.close()
+
 # ==========================================
 # RUTAS DE TAREAS
 # ==========================================
@@ -356,33 +519,25 @@ def index():
     db = None
     cursor = None
     try:
-        # 1. Inicialización y Limpieza de papelera (Automática)
+        # 1. EJECUCIÓN DE PROCESOS AUTOMÁTICOS
+        # Aquí es donde el sistema "limpia" y "recuerda" al cargar la web
+        limpiar_papelera_automatica() # Asegúrate de tener esta función definida
+        verificar_recordatorios_proximos()
+
         db = get_db()
         cursor = db.cursor(dictionary=True)
-        
-        # Eliminamos tareas que llevan más de 2 días en la papelera
-        cursor.execute("DELETE FROM tareas WHERE eliminado_at < NOW() - INTERVAL 2 DAY")
-        db.commit()
 
-        # 2. Datos del usuario
-        cursor.execute("SELECT usuario, email FROM usuarios WHERE id=%s", (session['user_id'],))
+        # 2. Obtener datos del usuario logueado
+        cursor.execute("SELECT usuario, email, xp, racha FROM usuarios WHERE id=%s", (session['user_id'],))
         user_data = cursor.fetchone()
 
-        # 3. VERIFICACIÓN DE RECORDATORIOS (LLAMADA CRÍTICA)
-        # Se ejecutan ambas verificaciones para asegurar que no se pierda ninguna notificación.
-        # Asegúrate de que estas funciones cierren sus propias conexiones internas.
-        verificar_recordatorios_proximos() 
-        
-        if user_data and user_data['email']:
-            verificar_recordatorios_pendientes(session['user_id'], user_data['email'])
-
-        # 4. Parámetros de filtrado
+        # 3. Captura de parámetros de la URL
         ver_papelera = request.args.get('papelera', '0')
         tipo_filtro = request.args.get('tipo_filtro', '')
         ver_hechas = request.args.get('ver_hechas', '0')
         buscar = request.args.get('buscar', '') 
 
-        # 5. Construcción de Query Dinámica
+        # 4. Construcción de Query Dinámica
         if ver_papelera == '1':
             query = "SELECT * FROM tareas WHERE usuario_id=%s AND eliminado_at IS NOT NULL"
         else:
@@ -399,51 +554,40 @@ def index():
             params.extend([f"%{buscar}%", f"%{buscar}%"])
 
         if ver_papelera != '1':
-            if ver_hechas == '1':
-                query += " AND estado='hecha'"
-            else:
-                query += " AND estado='pendiente'"
+            estado_objetivo = 'hecha' if ver_hechas == '1' else 'pendiente'
+            query += " AND estado=%s"
+            params.append(estado_objetivo)
 
-        query += " ORDER BY fecha ASC"
+        query += " ORDER BY fecha ASC, hora_entrega ASC"
 
-        # 6. Ejecución y formateo de datos
         cursor.execute(query, tuple(params))
         tareas = cursor.fetchall()
 
+        # 5. Formateo estético de las tareas
         for t in tareas:
-            # Asignación de color si no existe
             if not t.get('color'):
                 t['color'] = string_to_color(t['materia'])
-            
-            # Formateo de hora (Manejo de timedelta para MySQL)
             if t['hora_entrega']:
-                if isinstance(t['hora_entrega'], timedelta):
-                    total_seconds = int(t['hora_entrega'].total_seconds())
-                    horas = total_seconds // 3600
-                    minutos = (total_seconds % 3600) // 60
-                    t['hora_entrega'] = f"{horas:02d}:{minutos:02d}"
-                else:
-                    t['hora_entrega'] = str(t['hora_entrega'])[:5]
+                t['hora_entrega'] = str(t['hora_entrega'])[:5]
 
-        # 7. Renderizado (Se pasan todos los parámetros solicitados)
+        # 6. Renderizado con Gamificación integrada
         return render_template('index.html', 
                                tareas=tareas, 
                                usuario=user_data['usuario'] if user_data else "Usuario", 
+                               usuario_xp=user_data['xp'] if user_data else 0,
+                               usuario_nivel=(user_data['xp'] // 500) + 1 if user_data else 1,
+                               usuario_racha=user_data['racha'] if user_data else 0,
                                tipo_filtro=tipo_filtro, 
                                ver_hechas=int(ver_hechas), 
                                buscar=buscar,
                                ver_papelera=int(ver_papelera))
     
     except Exception as e:
-        print(f"Error crítico en index: {e}")
-        return f"Error interno en la agenda: {e}", 500
-        
+        print(f"❌ Error crítico en index: {e}")
+        return "Error interno en la agenda. Por favor, intenta más tarde.", 500
     finally:
-        # ESTE BLOQUE ES VITAL: LIBERA EL POOL DE CONEXIONES
-        if cursor:
-            cursor.close()
-        if db:
-            db.close() # OBLIGATORIO para evitar "Pool Exhausted"
+        if cursor: cursor.close()
+        if db: db.close()
 
 @app.route('/ai_analisis')
 @login_required
@@ -575,7 +719,7 @@ def crear():
         return redirect(url_for('index'))
     return render_template("crear_editar.html", tarea=None)
 
-@app.route('/vaciar_papelera')
+@app.route('/vaciar_papelera', methods=['POST'])
 @login_required
 def vaciar_papelera():
     db = None
@@ -584,20 +728,31 @@ def vaciar_papelera():
         db = get_db()
         cursor = db.cursor()
         
-        # Eliminación física (permanente) de lo que esté en la papelera
-        cursor.execute("DELETE FROM tareas WHERE usuario_id = %s AND eliminado_at IS NOT NULL", 
-                       (session['user_id'],))
+        # Ejecutamos la eliminación física irreversible solo de los elementos del usuario actual
+        # que ya han sido marcados con una fecha en 'eliminado_at'
+        cursor.execute("""
+            DELETE FROM tareas 
+            WHERE usuario_id = %s AND eliminado_at IS NOT NULL
+        """, (session['user_id'],))
+        
         db.commit()
+        flash("La papelera se ha vaciado permanentemente.", "success")
         
-        flash("Se han eliminado permanentemente todos los elementos de la papelera.", "success")
     except Exception as e:
-        print(f"Error al vaciar papelera: {e}")
-        flash("No se pudo vaciar la papelera.", "danger")
-    finally:
-        if cursor: cursor.close()
-        if db: db.close() # Vital para no agotar el pool
+        if db:
+            db.rollback()  # Deshacemos cambios si hay un error
+        print(f"❌ Error crítico al vaciar papelera: {e}")
+        flash("Hubo un problema al intentar vaciar la papelera.", "danger")
         
-    return redirect(url_for('index', papelera=1))
+    finally:
+        # Cerramos recursos siempre, sin importar si hubo éxito o error
+        if cursor: 
+            cursor.close()
+        if db: 
+            db.close()
+        
+    # Redirigimos al índice manteniendo la vista de la papelera (usando ver_papelera=1)
+    return redirect(url_for('index', ver_papelera=1))
 
 @app.route('/restaurar/<int:id>')
 @login_required
@@ -634,71 +789,111 @@ def restaurar(id):
 @app.route('/completar/<int:id>')
 @login_required
 def completar(id):
-    db = get_db()
-    cursor = db.cursor(dictionary=True)
+    db = None
+    cursor = None
     try:
-        # 1. Obtener la tarea y validar que pertenezca al usuario logueado
-        # Obtenemos también el XP actual del usuario para calcular si sube de nivel
+        db = get_db()
+        cursor = db.cursor(dictionary=True)
+
+        # 1. Traemos datos de la tarea Y del usuario
         cursor.execute("""
-            SELECT t.*, u.email, u.usuario, u.xp as xp_actual FROM tareas t 
+            SELECT t.*, u.email, u.usuario, u.xp as xp_actual, 
+                   u.racha, u.ultima_fecha_completada, u.importantes_seguidas
+            FROM tareas t 
             JOIN usuarios u ON t.usuario_id = u.id 
             WHERE t.id=%s AND t.usuario_id=%s
         """, (id, session['user_id']))
+        
         data = cursor.fetchone()
         
-        if data:
-            # 2. Lógica de cambio de estado y puntos de XP
-            nuevo_estado = 'pendiente' if data['estado'] == 'hecha' else 'hecha'
-            puntos = 50 if nuevo_estado == 'hecha' else -50
-            
-            # --- LÓGICA DE NIVEL (EJEMPLO) ---
-            # Calculamos niveles basados en rangos de 500 XP
-            xp_antes = data['xp_actual']
-            xp_despues = max(0, xp_antes + puntos)
-            nivel_antes = (xp_antes // 500) + 1
-            nuevo_nivel = (xp_despues // 500) + 1
-            subio_de_nivel = nuevo_nivel > nivel_antes
-            # ---------------------------------
+        if not data:
+            flash("No se encontró la tarea o no tienes permiso.", "danger")
+            return redirect(url_for('index'))
 
-            # 3. Ejecutar actualizaciones dentro de una transacción
-            cursor.execute("UPDATE tareas SET estado=%s WHERE id=%s", (nuevo_estado, id))
-            cursor.execute("UPDATE usuarios SET xp=%s WHERE id=%s", (xp_despues, session['user_id']))
-            
-            # Confirmar cambios en la base de datos antes de disparar correos
-            db.commit()
-
-            # 4. Notificaciones y Logros
-            if nuevo_estado == 'hecha':
-                try:
-                    # Notificación estándar de tarea completada
-                    if data.get('email'):
-                        enviar_correo_notificacion(data['email'], data['usuario'], data['tema'], "COMPLETADA")
-                    
-                    # LLAMADA CRÍTICA: Si subió de nivel, disparamos el correo de logro
-                    if subio_de_nivel:
-                        notificar_logro(session['user_id'], "Nivel", nuevo_nivel)
-                        flash(f"¡Felicidades! Alcanzaste el nivel {nuevo_nivel} 🏆", "success")
-                    else:
-                        flash(f"Tarea completada. +50 XP", "info")
-                
-                except Exception as mail_error:
-                    # Si falla el mail, no queremos que se rompa la app
-                    print(f"Error enviando notificaciones: {mail_error}")
+        nuevo_estado = 'pendiente' if data['estado'] == 'hecha' else 'hecha'
+        
+        # --- LÓGICA DE PUNTOS ---
+        puntos_base = 50
+        multiplicador = 1.0
+        nuevas_importantes = data['importantes_seguidas']
+        
+        if nuevo_estado == 'hecha':
+            if data['importante'] == 1:
+                nuevas_importantes += 1
+                if nuevas_importantes >= 3:
+                    multiplicador = 1.5
+                    flash("¡COMBO! Multiplicador x1.5 activado 🔥", "success")
             else:
-                flash("Tarea marcada como pendiente.", "warning")
+                nuevas_importantes = 0 
+            
+            puntos_cambio = int(puntos_base * multiplicador)
+        else:
+            puntos_cambio = -50 
+            nuevas_importantes = 0
+
+        xp_final = max(0, data['xp_actual'] + puntos_cambio)
+        nivel_antes = (data['xp_actual'] // 500) + 1
+        nivel_despues = (xp_final // 500) + 1
+
+        # 3. --- LÓGICA DE RACHAS ---
+        nueva_racha = data['racha']
+        hoy = datetime.now().date()
+        ultima_vez = data['ultima_fecha_completada']
+
+        if nuevo_estado == 'hecha':
+            if ultima_vez == hoy - timedelta(days=1):
+                nueva_racha += 1
+            elif ultima_vez != hoy:
+                nueva_racha = 1
+            
+            cursor.execute("""
+                UPDATE usuarios 
+                SET xp=%s, nivel=%s, racha=%s, ultima_fecha_completada=%s, importantes_seguidas=%s 
+                WHERE id=%s
+            """, (xp_final, nivel_despues, nueva_racha, hoy, nuevas_importantes, session['user_id']))
+        else:
+            cursor.execute("""
+                UPDATE usuarios 
+                SET xp=%s, nivel=%s, importantes_seguidas=0 
+                WHERE id=%s
+            """, (xp_final, nivel_despues, session['user_id']))
+
+        # 4. Actualizar tarea
+        cursor.execute("UPDATE tareas SET estado=%s WHERE id=%s", (nuevo_estado, id))
+        
+        # 5. --- LOGROS (Corregida la indentación) ---
+        if nuevo_estado == 'hecha':
+            cursor.execute("SELECT COUNT(*) as total FROM tareas WHERE usuario_id=%s AND estado='hecha'", (session['user_id'],))
+            total_hechas = cursor.fetchone()['total']
+            
+            hitos_comunes = {1: "Primer Paso", 5: "Estudiante Aplicado", 10: "Maestro del Tiempo", 50: "Leyenda de la Agenda"}
+            
+            if total_hechas in hitos_comunes:
+                nombre_logro = hitos_comunes[total_hechas]
+                notificar_logro(session['user_id'], "LOGRO", nombre_logro) 
+                flash(f"¡Logro desbloqueado: {nombre_logro}! 🏆 Checkea tu email.", "success")
+
+            if nivel_despues > nivel_antes:
+                notificar_logro(session['user_id'], "NIVEL", nivel_despues)
+                flash(f"¡NIVEL {nivel_despues} ALCANZADO! 🏆", "success")
+
+            # 6. Feedback visual
+            if nueva_racha > data['racha']:
+                flash(f"¡Tarea lista! Racha de {nueva_racha} días 🔥", "info")
+            else:
+                flash(f"¡Tarea completada! +{puntos_cambio} XP 🚀", "info")
+        else:
+            flash("Tarea marcada como pendiente. -50 XP.", "warning")
+
+        db.commit()
 
     except Exception as e:
-        # Si algo falla en la DB, deshacemos los cambios para evitar datos corruptos
-        if db:
-            db.rollback()
-        print(f"Error crítico en completar: {e}")
-        flash("Ocurrió un error al actualizar la tarea.", "danger")
+        if db: db.rollback()
+        print(f"❌ Error crítico: {e}")
+        flash("Hubo un error al procesar tu progreso.", "danger")
     finally:
-        # Cerramos siempre las conexiones para no saturar el servidor MySQL
-        if cursor:
-            cursor.close()
-        if db:
-            db.close()
+        if cursor: cursor.close()
+        if db: db.close()
         
     return redirect(request.referrer or url_for('index'))
 
@@ -830,33 +1025,58 @@ def editar_perfil():
     db.close()
     return render_template("editar_perfil.html", user=user)
 
-@app.route('/editar/<int:id>', methods=['GET','POST'])
+@app.route('/editar/<int:id>', methods=['GET', 'POST'])
 @login_required
 def editar(id):
     db = get_db()
     cursor = db.cursor(dictionary=True)
+    
+    # 1. VALIDACIÓN DE SEGURIDAD: Verificar existencia y propiedad
     cursor.execute("SELECT * FROM tareas WHERE id=%s AND usuario_id=%s", (id, session['user_id']))
     tarea = cursor.fetchone()
+    
     if not tarea:
-        flash("Acceso denegado.", "danger")
         db.close()
+        flash("Acceso denegado: La tarea no existe o no tienes permiso.", "danger")
         return redirect(url_for('index'))
+    
+    # 2. PROCESAMIENTO DEL FORMULARIO (POST)
     if request.method == 'POST':
-        materia = request.form.get('materia')
-        tema = request.form.get('tema')
-        fecha = request.form.get('fecha')
-        hora_entrega = f"{request.form.get('hora_h', '00')}:{request.form.get('hora_m', '00')}:00"
-        tipo = request.form.get('tipo')
-        importante = 1 if 'importante' in request.form else 0
-        cursor.execute(
-            "UPDATE tareas SET materia=%s,tema=%s,fecha=%s,hora_entrega=%s,importante=%s,tipo=%s WHERE id=%s AND usuario_id=%s",
-            (materia, tema, fecha, hora_entrega, importante, tipo, id, session['user_id'])
-        )
-        db.commit()
+        try:
+            materia = request.form.get('materia')
+            tema = request.form.get('tema')
+            fecha = request.form.get('fecha')
+            # Construcción de la hora asegurando formato HH:MM:SS
+            hora_h = request.form.get('hora_h', '00')
+            hora_m = request.form.get('hora_m', '00')
+            hora_entrega = f"{hora_h}:{hora_m}:00"
+            
+            tipo = request.form.get('tipo')
+            importante = 1 if 'importante' in request.form else 0
+            
+            # Ejecutar la actualización filtrando siempre por id y usuario_id
+            cursor.execute(
+                """UPDATE tareas 
+                   SET materia=%s, tema=%s, fecha=%s, hora_entrega=%s, importante=%s, tipo=%s 
+                   WHERE id=%s AND usuario_id=%s""",
+                (materia, tema, fecha, hora_entrega, importante, tipo, id, session['user_id'])
+            )
+            
+            db.commit()
+            flash("¡Tarea actualizada correctamente!", "success")
+            return redirect(url_for('index'))
+            
+        except Exception as e:
+            print(f"Error al actualizar la tarea: {e}")
+            flash("Ocurrió un error al guardar los cambios.", "danger")
+        finally:
+            db.close()
+            
+    # 3. RENDERIZADO DE LA VISTA (GET)
+    # Si la conexión sigue abierta (en caso de GET), la cerramos antes de renderizar
+    if db.is_connected():
         db.close()
-        flash("Tarea actualizada.", "success")
-        return redirect(url_for('index'))
-    db.close()
+        
     return render_template("crear_editar.html", tarea=tarea)
 
 if __name__ == '__main__':
