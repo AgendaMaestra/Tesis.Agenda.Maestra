@@ -7,66 +7,136 @@
     <title>Agenda Maestra</title>
 
     <style>
-        /* ESTILOS BASE (MODO OSCURO POR DEFECTO) */
-        :root {
-            --bg-body: #0f172a;
-            --text-clock: #ffffff;
-            --btn-bg: rgba(255, 255, 255, 0.1);
-            --btn-text: #ffffff;
-            --btn-border: rgba(255, 255, 255, 0.2);
-            --accent: #38bdf8; /* Color celeste de tu logo */
-        }
+        /* ============================================================
+   ESTILOS BASE Y VARIABLES (SISTEMA DE DISEÑO)
+   ============================================================ */
+:root {
+    /* Modo Oscuro (Default) */
+    --bg-body: #0f172a;
+    --text-main: #ffffff;
+    --text-clock: #38bdf8; /* Celeste para resaltar el tiempo */
+    --btn-bg: rgba(255, 255, 255, 0.05);
+    --btn-text: #ffffff;
+    --btn-border: rgba(255, 255, 255, 0.1);
+    --accent: #38bdf8;
+    --glass-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
 
-        /* ESTILOS MODO CLARO */
-        body.light-mode {
-            --bg-body: #f1f5f9;
-            --text-clock: #1e293b;
-            --btn-bg: #ffffff;
-            --btn-text: #1e293b;
-            --btn-border: #cbd5e1;
-        }
+/* ESTILOS MODO CLARO */
+body.light-mode {
+    --bg-body: #f1f5f9;
+    --text-main: #1e293b;
+    --text-clock: #0ea5e9;
+    --btn-bg: rgba(255, 255, 255, 0.8);
+    --btn-text: #1e293b;
+    --btn-border: #cbd5e1;
+    --glass-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
 
-        body {
-            background-color: var(--bg-body);
-            margin: 0;
-            transition: background-color 0.3s ease;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
+body {
+    background-color: var(--bg-body);
+    color: var(--text-main);
+    margin: 0;
+    padding: 0;
+    /* Transición suave para todos los cambios de color */
+    transition: background-color 0.4s cubic-bezier(0.4, 0, 0.2, 1), color 0.4s ease;
+    font-family: 'Plus Jakarta Sans', 'Segoe UI', system-ui, sans-serif;
+    min-height: 100vh;
+}
 
-        /* RELOJ DIGITAL */
-        .digital-clock {
-            position: fixed;
-            top: 15px;
-            right: 15px;
-            padding: 8px 15px;
-            background: var(--btn-bg);
-            color: var(--text-clock);
-            border: 1px solid var(--btn-border);
-            border-radius: 10px;
-            font-family: monospace;
-            font-weight: bold;
-            font-size: 0.9rem;
-            z-index: 1000;
-            backdrop-filter: blur(5px);
-        }
+/* ============================================================
+   COMPONENTES DE NAVEGACIÓN SUPERIOR
+   ============================================================ */
 
-        /* BOTÓN DE TEMA */
-        .theme-toggle {
-            position: fixed;
-            top: 15px;
-            left: 15px;
-            padding: 8px 15px;
-            background: var(--btn-bg);
-            color: var(--text-clock);
-            border: 1px solid var(--btn-border);
-            border-radius: 10px;
-            cursor: pointer;
-            font-weight: 600;
-            font-size: 0.8rem;
-            z-index: 1000;
-            transition: all 0.2s;
-            backdrop-filter: blur(5px);
-        }
+/* Estilo común para elementos flotantes (Reloj y Toggle) */
+.nav-floating-item {
+    position: absolute;
+    top: 20px;
+    padding: 10px 16px;
+    background: var(--btn-bg);
+    color: var(--btn-text);
+    border: 1px solid var(--btn-border);
+    border-radius: 12px;
+    backdrop-filter: blur(8px); /* Efecto cristal moderno */
+    -webkit-backdrop-filter: blur(8px);
+    box-shadow: var(--glass-shadow);
+    z-index: 1000;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.nav-floating-item:hover {
+    background: rgba(56, 189, 248, 0.1);
+    border-color: var(--accent);
+    transform: translateY(-2px);
+}
+
+/* RELOJ DIGITAL */
+.digital-clock {
+    right: 20px;
+    font-family: 'JetBrains Mono', monospace; /* Fuente más "tech" para el reloj */
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--text-clock);
+    letter-spacing: 1px;
+}
+
+/* BOTÓN DE TEMA (Toggle) */
+.theme-toggle {
+    left: 20px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Ajuste sutil para evitar solapamiento con el título en móviles */
+@media (max-width: 480px) {
+    .digital-clock, .theme-toggle {
+        top: 10px;
+        padding: 6px 12px;
+        font-size: 0.8rem;
+    }
+}
+
+/* ============================================================
+   AJUSTE PARA MÓVILES EN LAYOUT (Reloj y Contraste)
+   ============================================================ */
+@media (max-width: 640px) {
+    /* Contenedor invisible para agrupar los controles superiores si no existe uno, 
+       o aplicamos estilos directos para que fluyan mejor */
+    
+    .digital-clock {
+        position: relative !important; /* Cambiado de static para permitir ligeros ajustes de top/left */
+        top: 0 !important;
+        right: 0 !important;
+        font-size: 1.2rem !important; /* Un poco más pequeño en móvil */
+        margin: 15px auto 5px auto !important;
+        padding: 8px 15px !important;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 12px;
+        width: fit-content !important; /* No ocupa todo el ancho, solo lo que necesita */
+        border: 1px solid var(--glass-border);
+    }
+
+    .theme-toggle {
+        position: relative !important;
+        top: 0 !important;
+        left: 0 !important;
+        display: block !important;
+        width: 80% !important; /* Más elegante que el 100% */
+        max-width: 200px;
+        margin: 10px auto !important;
+        padding: 8px !important;
+        font-size: 0.75rem !important;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        border-radius: 20px !important;
+    }
+}
 
         .theme-toggle:hover {
             background: var(--accent);
@@ -88,40 +158,74 @@
     }
     </style>
 
-    <script>
-        function toggleTheme(){
-            document.body.classList.toggle("light-mode");
-            if(document.body.classList.contains("light-mode")){
-                localStorage.setItem("theme","light");
-            }else{
-                localStorage.setItem("theme","dark");
-            }
+<script>
+    /**
+     * Gestión de Temas (Modo Claro/Oscuro)
+     * Optimizamos para evitar el parpadeo de carga
+     */
+    const toggleTheme = () => {
+        const isLight = document.body.classList.toggle("light-mode");
+        localStorage.setItem("theme", isLight ? "light" : "dark");
+    };
+
+    /**
+     * Reloj Digital
+     * Usamos Intl.DateTimeFormat para mayor precisión y soporte de formatos
+     */
+    const updateClock = () => {
+        const clockElement = document.getElementById('clock');
+        if (!clockElement) return;
+
+        const now = new Date();
+        // Formateador robusto: HH:MM:SS
+        const timeString = now.toLocaleTimeString('es-AR', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: false
+        });
+        
+        clockElement.textContent = timeString;
+    };
+
+    /**
+     * Inicialización Inmediata
+     * Ejecutamos la carga del tema antes del renderizado para evitar el "flash"
+     */
+    (function init() {
+        // 1. Aplicar tema inmediatamente (prevenir parpadeo)
+        const savedTheme = localStorage.getItem("theme");
+        if (savedTheme === "light") {
+            document.documentElement.classList.add("light-mode"); // Aplicar a html o body
+            document.addEventListener('DOMContentLoaded', () => document.body.classList.add("light-mode"));
         }
 
-        function updateClock() {
-            const now = new Date();
-            const hours = String(now.getHours()).padStart(2, '0');
-            const minutes = String(now.getMinutes()).padStart(2, '0');
-            const seconds = String(now.getSeconds()).padStart(2, '0');
-            const clockElement = document.getElementById('clock');
-            if(clockElement) {
-                clockElement.innerText = hours + ':' + minutes + ':' + seconds;
-            }
-        }
-
-        window.onload = function(){
-            if(localStorage.getItem("theme") === "light"){
-                document.body.classList.add("light-mode");
-            }
+        // 2. Configurar eventos al cargar el DOM
+        document.addEventListener('DOMContentLoaded', () => {
             updateClock();
             setInterval(updateClock, 1000);
-        }
-    </script>
+        });
+    })();
+</script>
 </head>
 <body>
-    <div id="clock" class="digital-clock">00:00:00</div>
-    <button class="theme-toggle" onclick="toggleTheme()">Contraste</button>
+    <header class="top-bar">
+        <div class="nav-container">
+            <button class="theme-toggle nav-floating-item" onclick="toggleTheme()" aria-label="Cambiar modo de contraste">
+                <span class="icon"></span>
+                <span class="text-toggle">Contraste</span>
+            </button>
+
+            <div id="clock" class="digital-clock nav-floating-item" aria-live="off">
+                00:00:00
+            </div>
+        </div>
+    </header>
+
+    <main id="main-content" role="main">
+        {% block content %}{% endblock %}
+    </main>
+
     <script src="{{ url_for('static', filename='js/assistant.js') }}"></script>
-    {% block content %}{% endblock %}
 </body>
 </html>

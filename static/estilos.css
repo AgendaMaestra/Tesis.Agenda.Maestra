@@ -248,45 +248,139 @@ input:focus, select:focus {
     z-index: 1000;
 }
 
-/* Responsividad mejorada para móviles */
+/* ============================================================
+   ESTILOS PARA MÓVIL (< 640px) - CORRECCIÓN DE DISEÑO
+   ============================================================ */
 @media (max-width: 640px) {
-    .main-wrapper {
-        padding: 10px;
-        padding-top: 65px;
-    }
-
+    /* 1. FIX CRÍTICO: Evitar que la tarjeta se salga */
     .glass-card {
-        padding: 20px 15px;
-        border-radius: 20px;
+        padding: 15px !important;
+        margin-bottom: 12px !important;
+        width: 100% !important; /* CORREGIDO: Antes estaba en 120% */
+        max-width: 100% !important;
+        border-radius: 16px !important;
+        box-sizing: border-box !important;
+        overflow: hidden; /* Evita que el contenido interno empuje la tarjeta */
     }
 
-    .task-item {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 15px;
+    /* 2. MÁS OPCIONES: Micro-botón legible */
+    #container-mas-opciones .dropdown-btn {
+        font-size: 10px !important;
+        padding: 5px 10px !important;
+        min-height: 28px !important;
+        line-height: 1 !important;
+        border-radius: 8px !important;
+        background: rgba(255, 255, 255, 0.08) !important;
+        border: 1px solid var(--glass-border) !important;
     }
 
-    .task-item > div:last-child {
-        width: 100%;
-        justify-content: flex-end;
-        border-top: 1px solid var(--glass-border);
-        padding-top: 10px;
+    /* 3. CABECERA: Grid de botones en paralelo */
+    .header-controls {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 8px !important;
+        width: 100% !important;
+        margin-top: 15px !important;
     }
 
-    .btn-main {
-        padding: 14px;
-        font-size: 0.95rem;
+    .header-controls .btn-main, 
+    .header-controls .btn-primary {
+        font-size: 10px !important; 
+        padding: 10px 4px !important;
+        min-height: 38px !important; /* Mejor área de toque */
+        font-weight: 800 !important;
+        text-transform: uppercase !important;
+        border-radius: 12px !important;
     }
 
-    .stats-info {
-        flex-direction: column;
-        gap: 10px;
+    /* 4. TEXTOS: Jerarquía clara */
+    .main-title {
+        font-size: 1.3rem !important;
+        text-align: left;
+        line-height: 1.1;
     }
 
-    .chart-container {
-        max-width: 100%;
+    .sub-title {
+        font-size: 0.8rem !important;
+        margin-top: 4px !important;
+        display: block;
+    }
+
+    /* 5. CONTENEDOR GENERAL */
+    .main-wrapper {
+        padding: 12px !important;
+        width: 100% !important;
+        overflow-x: hidden !important;
     }
 }
+
+/* ============================================================
+   ESTILOS PARA MÓVIL (< 640px) - CORRECCIÓN DE DISEÑO
+   ============================================================ */
+@media (max-width: 640px) {
+    /* 1. FIX CRÍTICO: Evitar que la tarjeta se salga */
+    .glass-card {
+        padding: 15px !important;
+        margin-bottom: 12px !important;
+        width: 100% !important; /* CORREGIDO: Antes estaba en 120% */
+        max-width: 100% !important;
+        border-radius: 16px !important;
+        box-sizing: border-box !important;
+        overflow: hidden; /* Evita que el contenido interno empuje la tarjeta */
+    }
+
+    /* 2. MÁS OPCIONES: Micro-botón legible */
+    #container-mas-opciones .dropdown-btn {
+        font-size: 10px !important;
+        padding: 5px 10px !important;
+        min-height: 28px !important;
+        line-height: 1 !important;
+        border-radius: 8px !important;
+        background: rgba(255, 255, 255, 0.08) !important;
+        border: 1px solid var(--glass-border) !important;
+    }
+
+    /* 3. CABECERA: Grid de botones en paralelo */
+    .header-controls {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 8px !important;
+        width: 100% !important;
+        margin-top: 15px !important;
+    }
+
+    .header-controls .btn-main, 
+    .header-controls .btn-primary {
+        font-size: 10px !important; 
+        padding: 10px 4px !important;
+        min-height: 38px !important; /* Mejor área de toque */
+        font-weight: 800 !important;
+        text-transform: uppercase !important;
+        border-radius: 12px !important;
+    }
+
+    /* 4. TEXTOS: Jerarquía clara */
+    .main-title {
+        font-size: 1.3rem !important;
+        text-align: left;
+        line-height: 1.1;
+    }
+
+    .sub-title {
+        font-size: 0.8rem !important;
+        margin-top: 4px !important;
+        display: block;
+    }
+
+    /* 5. CONTENEDOR GENERAL */
+    .main-wrapper {
+        padding: 12px !important;
+        width: 100% !important;
+        overflow-x: hidden !important;
+    }
+}
+
+
 
 .estadisticas-card{
     text-align:center;
@@ -376,18 +470,66 @@ input:focus, select:focus {
     animation: shine 3s infinite;
 }
 
+/* FIX ESPECÍFICO: ALERTA DE ENTREGA */
+/* CORRECCIÓN FINAL DE ALERTA Y GRADIENTE */
+.alerta-entrega {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-glass);
+    padding: 15px;
+    border-radius: 18px;
+    margin: 15px 0;
+    width: 100%;
+}
+
 .alerta-entrega i {
-    font-size: 1.8rem;
+    font-size: 1.5rem !important;
+    /* Gradiente para el icono */
     background: linear-gradient(135deg, var(--accent), #00ff88);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
+    flex-shrink: 0;
+}
+
+.alerta-text {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* Evita que el texto se escape */
 }
 
 .alerta-text b {
-    color: var(--accent);
-    font-size: 1.1rem;
-    display: block;
-    margin-bottom: 2px;
+    /* Gradiente para el texto "PRÓXIMA ENTREGA" */
+    background: linear-gradient(135deg, var(--accent), #00ff88);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    
+    font-size: 0.95rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: inline-block; /* Necesario para que el clip funcione bien */
+}
+
+.alerta-entrega span {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    font-weight: 600;
+    margin-top: 2px;
+}
+
+/* Ajuste móvil para evitar que el texto desaparezca */
+@media (max-width: 480px) {
+    .alerta-entrega {
+        padding: 12px;
+        gap: 10px;
+    }
+    .alerta-text b {
+        font-size: 0.85rem;
+    }
 }
 
 /* --- ANIMACIONES --- */
@@ -591,4 +733,60 @@ input:focus, select:focus {
     font-size: 0.85rem;
     color: var(--accent);
     font-weight: 700;
+}
+
+/* --- REINGENIERÍA MÓVIL UNIVERSAL PARA AGENDA MAESTRA --- */
+@media (max-width: 640px) {
+    /* Contenedor fluido para todas las vistas */
+    .main-wrapper {
+        padding: 10px !important;
+        padding-top: 20px !important; 
+        width: 100% !important;
+        margin: 0 !important;
+    }
+
+    /* Tarjetas automáticas */
+    .glass-card {
+        padding: 15px !important;
+        border-radius: 15px !important;
+        width: 100% !important;
+    }
+
+    /* Tareas: De Flexbox a Grid para evitar que el texto se amontone */
+    .task-item {
+        display: grid !important;
+        grid-template-columns: 1fr !important; /* Una sola columna */
+        gap: 10px !important;
+        text-align: left;
+    }
+
+    /* Los botones de la tarea (Hecha/Borrar) se ponen a la par */
+    .task-item > div:last-child {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        width: 100% !important;
+        border-top: 1px solid var(--glass-border);
+        padding-top: 10px;
+    }
+
+    /* Inputs que no rompen la pantalla */
+    input[type="text"], input[type="email"], input[type="password"], select, textarea {
+        width: 100% !important;
+        font-size: 16px !important; /* Evita zoom molesto en iPhone */
+        padding: 12px !important;
+    }
+
+    /* Botones grandes y fáciles de tocar */
+    .btn-main, .btn-primary, .btn-success {
+        width: 100% !important;
+        min-height: 48px;
+        margin: 5px 0;
+    }
+
+    /* Gráficos de estadísticas */
+    .chart-container {
+        max-width: 100% !important;
+        height: 200px !important;
+    }
 }

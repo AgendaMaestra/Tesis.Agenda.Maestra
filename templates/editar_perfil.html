@@ -1,45 +1,106 @@
 {% extends 'layout.html' %} 
 {% block content %} 
 <div class="main-wrapper"> 
-     <div class="glass-card" style="text-align: center; max-width: 500px;"> 
-         <h2 style="font-weight:800; margin-bottom:10px; color: var(--accent); font-size:1.5rem;">Modificar Perfil</h2> 
-         <p style="margin-bottom:25px; opacity:0.6; font-size: 0.9rem;">Actualiza tus datos y foto</p> 
+     <div class="glass-card" style="text-align: center; max-width: 500px; margin: 0 auto; animation: fadeIn 0.5s ease;"> 
+         
+         <h2 style="font-weight:800; margin-bottom:10px; color: var(--accent); font-size:1.6rem; letter-spacing: -0.5px;">MODIFICAR PERFIL</h2> 
+         <p style="margin-bottom:30px; opacity:0.6; font-size: 0.9rem;">Personaliza tu identidad en la plataforma</p> 
                   
-         <form method="POST" enctype="multipart/form-data"> 
+         <form method="POST" enctype="multipart/form-data" style="display: flex; flex-direction: column; gap: 15px;"> 
              
-             <label style="display:block; text-align:left; font-size:0.75rem; font-weight:800; opacity:0.5; margin-bottom:5px; text-transform:uppercase;">Correo Electrónico</label>
-             <input type="email" name="email" placeholder="ejemplo@correo.com" value="{{ user.email if user.email else '' }}"> 
+             <div style="text-align: left;">
+                <label style="font-size:0.7rem; font-weight:800; opacity:0.5; text-transform:uppercase; margin-left: 5px;">Correo Electrónico</label>
+                <input type="email" name="email" placeholder="ejemplo@correo.com" 
+                       value="{{ user.email if user.email else '' }}" 
+                       style="width: 100%; padding: 12px; margin-top: 5px;"> 
+             </div>
 
-             <label style="display:block; text-align:left; font-size:0.75rem; font-weight:800; opacity:0.5; margin-bottom:5px; text-transform:uppercase;">Fecha de Cumpleaños</label>
-             <input type="date" name="cumpleanos" value="{{ user.cumpleanos if user.cumpleanos else '' }}"> 
+             <div style="text-align: left;">
+                <label style="font-size:0.7rem; font-weight:800; opacity:0.5; text-transform:uppercase; margin-left: 5px;">Fecha de Cumpleaños</label>
+                <input type="date" name="cumpleanos" 
+                       value="{{ user.cumpleanos if user.cumpleanos else '' }}" 
+                       style="width: 100%; padding: 12px; margin-top: 5px;"> 
+             </div>
 
-             <label style="display:block; text-align:left; font-size:0.75rem; font-weight:800; opacity:0.5; margin-bottom:5px; text-transform:uppercase;">Foto de Perfil</label>
-             <div style="margin-bottom: 25px;">
-                 <label for="input-archivo" id="label-archivo" style="display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2px dashed var(--glass-border); padding: 20px; border-radius: 14px; cursor: pointer; background: rgba(255,255,255,0.01);">
-                     <span style="font-weight: 700; font-size: 0.9rem; color: var(--accent);" id="texto-archivo">Subir archivo de imagen</span>
-                     <span style="font-size: 0.75rem; opacity: 0.5; margin-top: 5px;">Formatos JPG, PNG o JPEG</span>
+             <div style="text-align: left;">
+                 <label style="font-size:0.7rem; font-weight:800; opacity:0.5; text-transform:uppercase; margin-left: 5px; margin-bottom: 8px; display: block;">Imagen de Perfil</label>
+                 
+                 <label for="input-archivo" id="label-archivo" class="upload-zone">
+                     <div id="icon-container" style="font-size: 1.5rem; margin-bottom: 5px;"></div>
+                     <span style="font-weight: 700; font-size: 0.9rem; color: var(--accent);" id="texto-archivo">Seleccionar nueva foto</span>
+                     <span style="font-size: 0.7rem; opacity: 0.5; margin-top: 4px;" id="info-archivo">JPG, PNG o JPEG (Máx. 2MB)</span>
                  </label>
                  <input type="file" name="foto_perfil" id="input-archivo" accept="image/*" style="display: none;">
              </div>
 
-             <button type="submit" class="btn-main" style="background: var(--success); color:#0f172a; border-radius:14px; padding:14px;">Guardar Cambios</button> 
-             <a href="{{ url_for('perfil') }}" style="display:block; text-align:center; margin-top:20px; color:var(--text-muted); text-decoration:none; font-size:0.85rem; font-weight: 700;">← Cancelar y volver al perfil</a> 
+             <div style="margin-top: 10px;">
+                <button type="submit" class="btn-main" style="background: var(--success); color:#0f172a; width: 100%; font-weight: 800; border-radius: 12px;">
+                    CONFIRMAR CAMBIOS
+                </button> 
+                
+                <a href="{{ url_for('perfil') }}" style="display:block; text-align:center; margin-top:20px; color:var(--text-muted); text-decoration:none; font-size:0.85rem; font-weight: 700; transition: 0.3s;" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--text-muted)'">
+                    ← Volver sin guardar
+                </a> 
+             </div>
          </form> 
      </div> 
-</div> 
+</div>
+
+<style>
+    .upload-zone {
+        display: flex; 
+        flex-direction: column; 
+        align-items: center; 
+        justify-content: center; 
+        border: 2px dashed var(--glass-border); 
+        padding: 25px; 
+        border-radius: 16px; 
+        cursor: pointer; 
+        background: rgba(255,255,255,0.02);
+        transition: all 0.3s ease;
+    }
+
+    .upload-zone:hover {
+        background: rgba(56, 189, 248, 0.05);
+        border-color: var(--accent);
+        transform: translateY(-2px);
+    }
+
+    .upload-zone.active {
+        border-color: var(--success);
+        background: rgba(46, 213, 115, 0.05);
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
 
 <script>
     const inputArchivo = document.getElementById('input-archivo');
-    const labelArchivo = document.getElementById('label-archivo');
     const textoArchivo = document.getElementById('texto-archivo');
+    const infoArchivo = document.getElementById('info-archivo');
+    const labelArchivo = document.getElementById('label-archivo');
+    const iconContainer = document.getElementById('icon-container');
 
-    if (inputArchivo) {
-        inputArchivo.addEventListener('change', function(e) {
-            if(this.files && this.files.length > 0) {
-                textoArchivo.innerText = "Imagen seleccionada: " + this.files[0].name;
-                labelArchivo.style.borderColor = "var(--success)";
-            }
-        });
-    }
+    inputArchivo.addEventListener('change', function(e) {
+        if (this.files && this.files.length > 0) {
+            const fileName = this.files[0].name;
+            textoArchivo.innerText = "¡Imagen cargada!";
+            infoArchivo.innerText = fileName;
+            labelArchivo.classList.add('active');
+            iconContainer.innerText = "✅";
+            iconContainer.style.animation = "bounce 0.5s ease";
+        }
+    });
+
+    // Pequeño efecto visual al seleccionar
+    document.styleSheets[0].insertRule(`
+        @keyframes bounce {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+        }
+    `, 0);
 </script>
 {% endblock %}

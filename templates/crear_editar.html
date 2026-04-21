@@ -74,4 +74,110 @@
          } 
      }); 
 </script> 
+
+<style>
+/* ============================================================
+   MODO ESCRITORIO (Sin cambios de orden)
+   ============================================================ */
+@media screen and (min-width: 601px) {
+    .glass-card {
+        max-width: 600px !important;
+        margin: 40px auto !important;
+        padding: 40px !important;
+        display: block !important;
+    }
+
+    /* Mantiene la Fecha y Hora en una sola fila de dos columnas */
+    .grid-form-row {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 20px !important;
+        margin-bottom: 25px !important;
+    }
+
+    /* Caja de Prioridad debajo de Fecha/Hora */
+    .priority-box {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        padding: 20px !important;
+        margin-bottom: 30px !important;
+        background: rgba(255, 255, 255, 0.03) !important;
+        border: 1px solid var(--glass-border) !important;
+        border-radius: 12px !important;
+    }
+
+    /* Botón Guardar y Cancelar */
+    .btn-main {
+        width: 100% !important;
+        padding: 16px !important;
+    }
+    
+    a[href*="index"] {
+        display: block !important;
+        text-align: center !important;
+        margin-top: 20px !important;
+    }
+}
+
+/* ============================================================
+   MODO MÓVIL (Organizado hacia abajo)
+   ============================================================ */
+@media screen and (max-width: 600px) {
+    .main-wrapper {
+        padding: 10px !important;
+    }
+
+    .glass-card {
+        padding: 25px 15px !important;
+        width: 100% !important;
+    }
+
+    /* Forzamos que Fecha y Hora se apilen verticalmente */
+    .glass-card form div[style*="grid-template-columns: 1fr 1fr"] {
+        grid-template-columns: 1fr !important; 
+        gap: 15px !important;
+    }
+
+    /* Pero los selectores de Hora (HH y MM) se quedan juntos */
+    div[style*="grid-template-columns: 1fr 1fr"] div[style*="display: grid"] {
+        grid-template-columns: 1fr 1fr !important;
+        gap: 10px !important;
+    }
+
+    /* Inputs más altos para el dedo y fuente de 16px para evitar zoom */
+    input[type="text"], 
+    input[type="date"], 
+    select {
+        width: 100% !important;
+        height: 50px !important;
+        font-size: 16px !important; 
+        margin-bottom: 15px !important;
+    }
+
+    /* Prioridad: Ajustada para el ancho del celular */
+    .priority-box {
+        margin-top: 10px !important;
+        margin-bottom: 25px !important;
+        padding: 15px !important;
+    }
+
+    /* Botón de Guardar: Grande y centrado */
+    .btn-main {
+        width: 100% !important;
+        padding: 18px !important;
+        font-size: 1rem !important;
+        border-radius: 12px !important;
+    }
+
+    /* Cancelar: Abajo de todo */
+    a[href*="index"] {
+        display: block !important;
+        text-align: center !important;
+        margin-top: 25px !important;
+    }
+}
+
+</style>
+
 {% endblock %}

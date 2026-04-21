@@ -1,16 +1,153 @@
 {% extends 'layout.html' %} 
 {% block content %} 
 <div class="main-wrapper"> 
-    <div class="glass-card"> 
-        <h2>Panel Administrador</h2> 
-        <h3>Usuarios registrados</h3> 
-        <ul> 
-            {% for u in usuarios %} 
-            <li>{{ u.usuario }}</li> 
-            {% endfor %} 
-        </ul> 
-        <p style="margin-top:20px; font-weight:700;">Total de tareas creadas en la base: {{ tareas }}</p> 
-        <a href="{{ url_for('index') }}" style="display:block; text-align:center; margin-top:20px; color:var(--text-muted); text-decoration:none; font-size:0.85rem; font-weight: 700;">← Volver al tablero</a>
+    <div class="glass-card admin-container"> 
+        <div class="admin-header">
+            <h2 class="admin-title">Panel Administrador</h2> 
+            <a href="{{ url_for('index') }}" class="back-link">← Volver al tablero</a>
+        </div>
+
+        <div class="admin-stats">
+            <div class="stat-card">
+                <span class="stat-label">Tareas Globales</span>
+                <span class="stat-value">{{ tareas }}</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-label">Usuarios Activos</span>
+                <span class="stat-value">{{ usuarios|length }}</span>
+            </div>
+        </div>
+
+        <h3 class="section-subtitle">Usuarios registrados</h3> 
+        <div class="table-wrapper">
+            <table class="admin-table">
+                <thead>
+                    <tr>
+                        <th>Nombre de Usuario</th>
+                        <th style="text-align: right;">Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for u in usuarios %} 
+                    <tr>
+                        <td>{{ u.usuario }}</td>
+                        <td style="text-align: right;"><span class="status-pill">Activo</span></td>
+                    </tr>
+                    {% endfor %} 
+                </tbody>
+            </table>
+        </div>
     </div> 
 </div> 
+
+<style>
+/* --- ESTILOS PANEL ADMINISTRADOR --- */
+
+.admin-container {
+    max-width: 800px !important;
+    padding: 30px !important;
+    margin: 0 auto !important;
+}
+
+.admin-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+.admin-title {
+    color: var(--accent);
+    font-size: 1.6rem;
+    margin: 0;
+}
+
+/* Tarjetas de Stats */
+.admin-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin-bottom: 30px;
+}
+
+.stat-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--glass-border);
+    padding: 15px;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+}
+
+.stat-label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    opacity: 0.6;
+    font-weight: 800;
+}
+
+.stat-value {
+    font-size: 1.5rem;
+    font-weight: 900;
+    color: var(--accent);
+}
+
+/* Tabla de Usuarios */
+.table-wrapper {
+    overflow-x: auto; /* Permite scroll horizontal si la pantalla es muy chica */
+    border-radius: 10px;
+}
+
+.admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+.admin-table th {
+    text-align: left;
+    padding: 12px;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    opacity: 0.5;
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.admin-table td {
+    padding: 15px 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    font-size: 0.95rem;
+}
+
+.status-pill {
+    background: rgba(0, 255, 136, 0.1);
+    color: #00ff88;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    font-weight: 800;
+}
+
+/* --- RESPONSIVIDAD MÓVIL --- */
+@media (max-width: 600px) {
+    .admin-container {
+        padding: 20px 15px !important;
+    }
+
+    .admin-header {
+        flex-direction: column;
+        gap: 10px;
+        text-align: center;
+    }
+
+    .admin-stats {
+        grid-template-columns: 1fr; /* Una columna en móvil */
+    }
+
+    .stat-value {
+        font-size: 1.2rem;
+    }
+}
+</style>
+
 {% endblock %}

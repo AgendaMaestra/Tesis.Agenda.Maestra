@@ -1,30 +1,23 @@
-#  Agenda Maestra v2026
+# Agenda Maestra v2026
 
-**Agenda Maestra** es una plataforma de productividad inteligente diseñada específicamente para estudiantes que buscan llevar su organización académica al siguiente nivel mediante la **gamificación** y la **Inteligencia Artificial**.
+Agenda Maestra es una plataforma de productividad integral diseñada para la optimización del rendimiento académico. El sistema combina mecánicas de gamificación con lógica de asistencia estratégica para facilitar la gestión de tareas y exámenes.
 
----
+## Público Objetivo
+La aplicación está orientada a estudiantes de nivel secundario, universitario y de posgrado, así como a usuarios que busquen reducir la procrastinación mediante un sistema de progreso basado en objetivos y recompensas.
 
-##  ¿Para quién es esto?
-Este proyecto está dirigido a **estudiantes de todos los niveles** (secundaria, universidad, posgrado) y a cualquier persona que necesite gestionar tareas y exámenes bajo un sistema de recompensas que fomente la constancia y reduzca la procrastinación.
+## Características Técnicas y Funcionalidades
 
-##  Características Principales
+* **Sistema de Gamificación**: Implementación de algoritmos para la asignación de puntos de experiencia (XP), gestión de niveles y desbloqueo de rangos basados en la productividad real.
+* **Seguimiento de Rachas**: Módulo diseñado para incentivar la constancia diaria mediante el monitoreo de actividad ininterrumpida.
+* **Asistencia Estratégica**: Sistema de análisis de carga de trabajo que identifica prioridades críticas y sugiere una secuencia lógica de resolución de tareas.
+* **Gestión de Ciclo de Vida de Tareas**: Incluye una papelera de reciclaje con persistencia temporal de 48 horas para la recuperación de datos eliminados.
+* **Visualización de Datos**: Calendario dinámico de entregas y panel de analíticas con métricas de rendimiento desglosadas por materia.
+* **Interfaz de Usuario**: Diseño basado en Glassmorphism con arquitectura responsiva y soporte para esquemas de color dual (Modo Claro/Oscuro).
 
-* ** Sistema de Gamificación:** Gana **XP (Experiencia)** por cada tarea completada. Sube de nivel y desbloquea nuevos rangos.
-* ** Sistema de Rachas:** ¡No pierdas tu fuego! Mantén tu racha diaria completando al menos una actividad al día.
-* ** Asistente Maestro (IA):** Un asistente integrado que analiza tu carga de trabajo, detecta prioridades y te sugiere por dónde empezar.
-* ** Calendario Dinámico:** Visualización clara de tus entregas y fechas críticas.
-* ** Papelera Inteligente:** Recupera tareas eliminadas por error (tienes 48 horas antes del borrado definitivo).
-* ** Panel de Estadísticas:** Gráficos de rendimiento por materia y estado de tareas.
-* ** Modo Dual:** Soporte completo para Modo Oscuro y Modo Claro con diseño *Glassmorphism*.
+## Stack Tecnológico
 
----
-
-##  Stack Tecnológico
-
-El proyecto está construido con tecnologías modernas de desarrollo web:
-
-* **Backend:** [Python](https://www.python.org/) con el micro-framework [Flask](https://flask.palletsprojects.com/).
-* **Base de Datos:** [MySQL](https://www.mysql.com/) para una gestión robusta de usuarios y tareas.
-* **Frontend:** HTML5, CSS3 (Custom Variables, Flexbox/Grid) y JavaScript Vanilla.
-* **Comunicación:** [Flask-Mail](https://pythonhosted.org/Flask-Mail/) para notificaciones automáticas y recordatorios por email.
-* **Seguridad:** Encriptación de contraseñas con `Werkzeug` y variables de entorno con `python-dotenv`.
+* **Backend**: Desarrollado en Python utilizando el micro-framework Flask.
+* **Base de Datos**: MySQL para la gestión persistente de perfiles de usuario, tareas y registros de gamificación.
+* **Frontend**: Arquitectura basada en HTML5, CSS3 (CSS Grid, Flexbox y Variables Personalizadas) y JavaScript funcional.
+* **Comunicaciones**: Integración de Flask-Mail para la automatización de notificaciones y recordatorios mediante protocolos SMTP.
+* **Seguridad**: Implementación de hashing de credenciales mediante Werkzeug y gestión de entorno a través de python-dotenv.

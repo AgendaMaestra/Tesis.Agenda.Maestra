@@ -1,105 +1,219 @@
 {% extends 'layout.html' %} 
 {% block content %} 
-<div class="main-wrapper"> 
-     <div class="glass-card estadisticas-card" style="max-width: 800px;"> 
-         <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 25px; gap: 10px;">
-             <h2 class="titulo-estadisticas" style="color: var(--accent); margin:0; font-size:1.4rem;">Rendimiento del Estudiante</h2> 
-             <a href="{{ url_for('index') }}" style="color: var(--text-muted); text-decoration:none; font-weight:700; font-size:0.85rem; flex-shrink:0;">← Tablero</a>
-         </div>
+<div class="main-wrapper" style="padding: 15px; min-height: 100vh; display: flex; align-items: center; justify-content: center;"> 
+    <div class="glass-card estadisticas-card"> 
+        
+        <div class="stats-header">
+            <div class="header-text">
+                <h2 class="titulo-estadisticas">RENDIMIENTO ACADÉMICO</h2> 
+                <p class="subtitulo-estadisticas">
+                    <span style="color: var(--success);">●</span> Panel de control de productividad
+                </p>
+            </div>
+            <a href="{{ url_for('index') }}" class="btn-retro">
+                <span class="icon">←</span> <span class="text">Tablero</span>
+            </a>
+        </div>
 
-         <div id="stats-data" 
-              data-hechas="{{ hechas }}" 
-              data-pendientes="{{ pendientes }}" 
-              data-total="{{ total }}"
-              data-labels-materias='{{ labels_materias | tojson }}'
-              data-values-materias='{{ values_materias | tojson }}'
-              style="display:none;"> 
-         </div> 
+        <div id="stats-data" 
+             data-hechas="{{ hechas }}" 
+             data-pendientes="{{ pendientes }}" 
+             data-total="{{ total }}"
+             style="display:none;"> 
+        </div> 
 
-         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 25px; margin-bottom: 25px;">
-             <div class="chart-container" style="width:100%; height:250px;"> 
-                 <p style="margin-bottom: 12px; opacity: 0.7; font-weight: 700; font-size: 0.9rem;">Global</p>
-                 <canvas id="chartProgreso" style="width:100%; height:100%;"></canvas> 
-             </div> 
+        <div class="stats-grid">
+            <div class="chart-container-premium"> 
+                <div class="header-chart">
+                    <p class="chart-title">PROGRESO GLOBAL</p>
+                    <span class="badge-accent">Estado</span>
+                </div>
+                <div class="canvas-wrapper">
+                    <canvas id="chartProgreso"></canvas> 
+                </div>
+            </div> 
 
-             <div class="chart-container" style="width:100%; height:250px;"> 
-                 <p style="margin-bottom: 12px; opacity: 0.7; font-weight: 700; font-size: 0.9rem;">Por Materia</p>
-                 <canvas id="chartMaterias" style="width:100%; height:100%;"></canvas> 
-             </div> 
-         </div>
+            <div class="stats-info-grid"> 
+                <div class="stat-premium-card border-accent"> 
+                    <div class="stat-icon" style="background: rgba(56, 189, 248, 0.1); color: var(--accent);"></div>
+                    <div class="stat-content">
+                        <span class="stat-number">{{ total }}</span> 
+                        <span class="stat-label">Totales</span> 
+                    </div>
+                </div> 
+                <div class="stat-premium-card border-success"> 
+                    <div class="stat-icon" style="background: rgba(46, 213, 115, 0.1); color: var(--success);"></div>
+                    <div class="stat-content">
+                        <span class="stat-number">{{ hechas }}</span> 
+                        <span class="stat-label">Logradas</span> 
+                    </div>
+                </div> 
+                <div class="stat-premium-card border-error"> 
+                    <div class="stat-icon" style="background: rgba(255, 71, 87, 0.1); color: var(--error);"></div>
+                    <div class="stat-content">
+                        <span class="stat-number">{{ pendientes }}</span> 
+                        <span class="stat-label">En Espera</span> 
+                    </div>
+                </div> 
+            </div> 
+        </div> 
+    </div> 
+</div>
 
-         <div class="stats-info"> 
-             <div class="stat-box"> 
-                 <span class="stat-number" style="color: var(--accent);">{{ total }}</span> 
-                 <span class="stat-label">Totales</span> 
-             </div> 
-             <div class="stat-box"> 
-                 <span class="stat-number" style="color: var(--success);">{{ hechas }}</span> 
-                 <span class="stat-label">Completadas</span> 
-             </div> 
-             <div class="stat-box"> 
-                 <span class="stat-number" style="color: var(--error);">{{ pendientes }}</span> 
-                 <span class="stat-label">Pendientes</span> 
-             </div> 
-         </div> 
-     </div> 
-</div> 
+<style>
+    :root {
+        --card-bg: rgba(255, 255, 255, 0.03);
+        --border-color: rgba(255, 255, 255, 0.08);
+        --accent: #38bdf8;
+        --success: #2ed573;
+        --error: #ff4757;
+        --text: #ffffff;
+    }
+
+    .estadisticas-card {
+        width: 100%;
+        max-width: 900px; /* Limita el ancho para que no se salga */
+        margin: 0 auto;
+        animation: slideUp 0.8s ease-out;
+        border-radius: 24px;
+        padding: clamp(15px, 4vw, 30px);
+        background: rgba(255, 255, 255, 0.02);
+        backdrop-filter: blur(10px);
+        border: 1px solid var(--border-color);
+        box-sizing: border-box; /* Evita que el padding sume al ancho */
+    }
+
+    .stats-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+        gap: 15px;
+    }
+
+    .titulo-estadisticas {
+        color: var(--accent);
+        margin: 0;
+        font-size: clamp(1.1rem, 4vw, 1.6rem);
+        font-weight: 900;
+        text-transform: uppercase;
+    }
+
+    .btn-retro {
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--text) !important;
+        padding: 8px 18px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        border: 1px solid var(--border-color);
+        text-decoration: none;
+        font-size: 0.85rem;
+        transition: 0.3s;
+    }
+
+    .btn-retro:hover {
+        background: var(--accent);
+        color: #000 !important;
+    }
+
+    /* GRID PRINCIPAL: Soluciona el desbordamiento */
+    .stats-grid {
+        display: grid; 
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); 
+        gap: 20px; 
+        width: 100%;
+    }
+
+    .chart-container-premium {
+        background: var(--card-bg);
+        padding: 20px;
+        border-radius: 20px;
+        border: 1px solid var(--border-color);
+        min-width: 0; /* Clave para evitar desbordamiento en grid */
+    }
+
+    .canvas-wrapper {
+        height: 220px; 
+        position: relative; 
+        width: 100%;
+    }
+
+    /* INFO GRID: Alineación vertical */
+    .stats-info-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        width: 100%;
+    }
+
+    .stat-premium-card {
+        background: var(--card-bg);
+        padding: 15px;
+        border-radius: 18px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        border: 1px solid var(--border-color);
+        transition: 0.3s;
+    }
+
+    .border-accent { border-left: 4px solid var(--accent); }
+    .border-success { border-left: 4px solid var(--success); }
+    .border-error { border-left: 4px solid var(--error); }
+
+    .stat-number {
+        display: block;
+        font-size: 1.4rem;
+        font-weight: 900;
+    }
+
+    .stat-label {
+        font-size: 0.75rem;
+        opacity: 0.5;
+        font-weight: 600;
+    }
+
+    /* Ajustes para Móvil */
+    @media (max-width: 600px) {
+        .stats-header { flex-direction: column; text-align: center; }
+        .btn-retro { width: 100%; justify-content: center; }
+        .stats-grid { grid-template-columns: 1fr; }
+    }
+
+    @keyframes slideUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-document.addEventListener("DOMContentLoaded", function () {
-    const dataElement = document.getElementById("stats-data");
-    if (!dataElement) return;
+document.addEventListener("DOMContentLoaded", function() {
+    const dataEl = document.getElementById('stats-data');
+    const hechas = parseInt(dataEl.dataset.hechas) || 0;
+    const pendientes = parseInt(dataEl.dataset.pendientes) || 0;
 
-    const hechas = parseInt(dataElement.getAttribute("data-hechas")) || 0;
-    const pendientes = parseInt(dataElement.getAttribute("data-pendientes")) || 0;
-    const labelsMaterias = JSON.parse(dataElement.getAttribute("data-labels-materias") || "[]");
-    const valuesMaterias = JSON.parse(dataElement.getAttribute("data-values-materias") || "[]");
-
-    const ctxProgreso = document.getElementById("chartProgreso");
-    if (ctxProgreso) {
-        new Chart(ctxProgreso, {
-            type: "doughnut",
-            data: {
-                labels: ["Hechas", "Pendientes"],
-                datasets: [{
-                    data: [hechas, pendientes],
-                    backgroundColor: ["#2ed573", "#ff4757"],
-                    borderWidth: 0
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { labels: { color: "#ffffff", font: { size: 11 } } } }
+    new Chart(document.getElementById('chartProgreso'), {
+        type: 'doughnut',
+        data: {
+            labels: ['Logradas', 'Pendientes'],
+            datasets: [{
+                data: [hechas, pendientes],
+                backgroundColor: ['#2ed573', '#ff4757'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '75%',
+            plugins: {
+                legend: { position: 'bottom', labels: { color: '#fff', font: { size: 12 } } }
             }
-        });
-    }
-
-    const ctxMaterias = document.getElementById("chartMaterias");
-    if (ctxMaterias) {
-        new Chart(ctxMaterias, {
-            type: "bar",
-            data: {
-                labels: labelsMaterias,
-                datasets: [{
-                    label: 'Carga',
-                    data: valuesMaterias,
-                    backgroundColor: "#38bdf8",
-                    borderRadius: 8
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: { ticks: { color: "#ffffff", stepSize: 1, font: { size: 10 } }, grid: { color: "rgba(255,255,255,0.05)" } },
-                    x: { ticks: { color: "#ffffff", font: { size: 10 } }, grid: { display: false } }
-                },
-                plugins: { legend: { display: false } }
-            }
-        });
-    }
+        }
+    });
 });
 </script>
 {% endblock %}

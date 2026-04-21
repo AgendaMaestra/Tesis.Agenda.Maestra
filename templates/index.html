@@ -143,71 +143,61 @@
             {% endif %}
         </div>
     </div> 
-    <div id="ai-assistant-container" style="position: fixed; bottom: 20px; right: 20px; z-index: 9999;">
-    <button class="ai-btn" onclick="toggleAssistant(); analizarPrioridades();" title="Consultar Asistente IA">
-        <div class="robot-wrapper">
+    <div id="ai-assistant-container" class="ai-float-wrapper">
+    <button class="ai-main-btn" onclick="toggleAssistant(); analizarPrioridades();">
+        <div class="robot-container">
             {% set nivel = ((user_xp | default(0)) // 500) + 1 %}
-            
-            <div class="aura-nivel lvl-{{ nivel }}"></div>
-            
-            <div class="robot-avatar lvl-{{ nivel }}">
-                {% if nivel < 3 %}
-                    🤖
-                {% elif nivel < 6 %}
-                    🦾
-                {% else %}
-                    🚀
-                {% endif %}
+            <div class="aura-fx lvl-{{ nivel }}"></div>
+            <div class="robot-icon">
+                {% if nivel < 3 %} 🤖 {% elif nivel < 6 %} 🦾 {% else %} 🚀 {% endif %}
             </div>
-            <span class="lvl-badge">Nivel {{ nivel }}</span>
+            <div class="lvl-tag">NV. {{ nivel }}</div>
         </div>
     </button>
 
-    <div id="ai-panel" class="ai-panel" style="display:none;">
+    <div id="ai-panel" class="ai-glass-panel" style="display: none;">
         <div class="ai-header">
-            <div style="display:flex; align-items:center; gap:8px;">
-                <span class="status-dot"></span>
-                <span style="font-weight: 800; font-size: 0.9rem; letter-spacing: 0.5px;">SISTEMA CORE</span>
+            <div class="system-brand">
+                <span class="pulse-dot"></span>
+                <span class="system-title">CORE <span class="accent-text">INTELLIGENCE</span></span>
             </div>
-            <button onclick="toggleAssistant()" class="close-ai">✕</button>
+            <button onclick="toggleAssistant()" class="close-ui-btn" aria-label="Cerrar">&times;</button>
         </div>
-        
-        <div id="ai-content" class="ai-content">
-            <div class="scanner-line"></div>
-            <div class="loading-text">
-                <span class="dots">Interpretando datos...</span>
-            </div>
+        <div class="ai-body">
+            <div class="ai-scanner-bar"></div>
+            <div class="glitch-text">ANALIZANDO PRIORIDADES...</div>
         </div>
     </div>
 </div>
 
-<div id="help-container" style="position: fixed; bottom: 20px; left: 20px; z-index: 9999;">
-    <button class="help-btn pulse" onclick="toggleHelp()" title="Guía de uso">
+<div id="help-container-root" class="help-container-wrapper">
+    <button class="help-trigger pulse" onclick="toggleHelp()" title="Guía de uso">
         <span class="help-icon">❓</span>
     </button>
-    <div id="help-modal" class="help-modal" style="display: none;">
+    
+    <div id="help-modal" class="help-card" style="display: none;">
         <div class="help-header">
-            <span>Centro de Ayuda</span>
-            <button onclick="toggleHelp()" class="close-help">×</button>
+            <span class="help-title"><i class="fas fa-info-circle"></i> Centro de Ayuda</span>
+            <button onclick="toggleHelp()" class="close-help">&times;</button>
         </div>
         <div class="help-body">
             <div class="help-step">
-                <strong>Gestión de Tareas</strong>
-                <p>Usa "Nuevo Elemento" para organizar materias. Recuerda marcar las estrellas ★ para obtener el <b>multiplicador x1.5</b>.</p>
+                <strong><i class="fas fa-tasks"></i> Gestión de Tareas</strong>
+                <p>Usa "Nuevo Elemento" para organizar materias. Las estrellas ★ dan <b>multiplicador x1.5</b>.</p>
             </div>
             <div class="help-step">
-                <strong>Recuperación (48h)</strong>
-                <p>¿Borraste algo por error? Tienes 2 días en la Papelera antes del borrado definitivo.</p>
+                <strong><i class="fas fa-history"></i> Recuperación (48h)</strong>
+                <p>Los elementos borrados viven 2 días en la papelera antes de desaparecer.</p>
             </div>
             <div class="help-step">
-                <strong>Sistema de Rachas</strong>
-                <p>Completa al menos una tarea al día para mantener tu fuego activo. ¡Si fallas un día, la racha vuelve a 0!</p>
+                <strong><i class="fas fa-fire"></i> Sistema de Rachas</strong>
+                <p>Mantén tu fuego activo completando tareas diario. ¡No dejes que vuelva a 0!</p>
             </div>
             <div class="help-step">
-                <strong>Asistente Estratégico</strong>
-                <p>El botón del robot analiza tus fechas de entrega y te dice por dónde empezar hoy.</p>
+                <strong><i class="fas fa-robot"></i> Asistente Estratégico</strong>
+                <p>El robot analiza tus fechas y prioriza tu día automáticamente.</p>
             </div>            
-            <a href="{{ url_for('logros') }}" class="btn-help-action">Ver mis logros</a>
+            <a href="{{ url_for('logros') }}" class="btn-help-link">Ver mis logros</a>
         </div>
     </div>
 </div>
@@ -216,6 +206,17 @@
 </div>
 </div>
 <script>
+
+function toggleAssistant() {
+    const panel = document.getElementById('ai-panel');
+    panel.style.display = (panel.style.display === 'none' || panel.style.display === '') ? 'block' : 'none';
+}
+
+function toggleHelp() {
+    const modal = document.getElementById('help-modal');
+    modal.style.display = (modal.style.display === 'none' || modal.style.display === '') ? 'block' : 'none';
+}
+
 function toggleEnfoque() {
     const body = document.body;
     const btn = document.getElementById('btn-enfoque');
@@ -677,5 +678,639 @@ function toggleEnfoque() {
         color: white;
         box-shadow: 0 0 10px rgba(255, 71, 71, 0.3);
     }
+
+    /* --- OPTIMIZACIÓN FINAL: FILTROS, ENFOQUE Y PAPELERA --- */
+
+/* 1. Cabecera y Título */
+.glass-card > div:first-child {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    flex-wrap: wrap !important;
+    gap: 15px !important;
+    margin-bottom: 20px !important;
+}
+
+/* 2. Alerta de Entrega (Gradiente Seguro) */
+.alerta-entrega {
+    display: flex !important;
+    align-items: center !important;
+    gap: 12px !important;
+    background: rgba(255, 255, 255, 0.05) !important;
+    padding: 12px 15px !important;
+    border-radius: 15px !important;
+    margin-bottom: 20px !important;
+}
+
+.alerta-entrega i, .alerta-text b {
+    background: linear-gradient(135deg, #ffd700, #00ff88) !important;
+    -webkit-background-clip: text !important;
+    background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+}
+
+/* 3. Botones de Acción Principales */
+.action-grid {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)) !important;
+    gap: 10px !important;
+    margin-bottom: 20px !important;
+}
+
+/* 4. FILTROS: Asegura que no se corten y tengan scroll */
+/* --- OPTIMIZACIÓN DE FLUJO Y RESPONSIVIDAD TOTAL --- */
+
+/* 1. Contenedor principal: Evita que la tarjeta toque los bordes del celular */
+.main-wrapper {
+    padding: 10px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+}
+
+.glass-card {
+    width: 100% !important;
+    max-width: 600px !important; /* Mantiene un ancho elegante */
+    padding: 20px 15px !important;
+    box-sizing: border-box !important;
+}
+
+/* 2. Cabecera flexible: Si el título y el botón no caben, el botón baja */
+.glass-card > div:first-child {
+    display: flex !important;
+    flex-wrap: wrap !important; /* ESTO HACE QUE BAJEN SI NO CABEN */
+    justify-content: space-between !important;
+    align-items: center !important;
+    gap: 15px !important;
+    margin-bottom: 25px !important;
+}
+
+/* 3. Botones de Acción: Se ajustan solos al ancho disponible */
+.action-grid {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 10px !important;
+    width: 100% !important;
+}
+
+.action-grid > a, .action-grid > button {
+    flex: 1 1 140px !important; /* Se estiran y bajan automáticamente */
+    min-width: 130px !important;
+}
+
+/* 4. Filtros y Controles Extra (Enfoque/Papelera) */
+.filter-scroll-container {
+    width: 100% !important;
+    display: flex !important;
+    gap: 8px !important;
+    overflow-x: auto !important;
+    padding-bottom: 10px !important;
+}
+
+/* Fila de Enfoque/Papelera: Si la pantalla es muy chica, se ponen uno arriba del otro */
+div:has(> a[href*="enfoque"]), 
+div:has(> a[href*="papelera"]) {
+    display: flex !important;
+    flex-wrap: wrap !important; 
+    justify-content: space-between !important;
+    gap: 10px !important;
+    padding: 15px 5px !important;
+}
+
+/* 5. Tarjetas de Tarea: No se rompen, el texto baja si es largo */
+.tarea-card {
+    display: grid !important;
+    grid-template-columns: 40px 1fr auto !important;
+    gap: 12px !important;
+    padding: 15px !important;
+    align-items: center !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+.tema-title {
+    font-size: 0.95rem !important;
+    white-space: normal !important; /* Permite saltos de línea */
+    word-break: break-word !important; 
+}
+
+/* 6. Ajustes específicos para pantallas muy pequeñas */
+@media (max-width: 400px) {
+    .main-title {
+        font-size: 1.2rem !important;
+    }
+    .nav-filter-btn {
+        padding: 8px 12px !important;
+        font-size: 0.75rem !important;
+    }
+    a[href*="enfoque"], a[href*="papelera"] {
+        font-size: 0.7rem !important;
+    }
+}
+
+/* --- FIX DE ORDENAMIENTO Y FLUJO RESPONSIVO --- */
+
+/* 1. Contenedor Base: Evita que la tarjeta toque los bordes físicos del celular */
+.main-wrapper {
+    padding: 10px !important;
+    box-sizing: border-box !important;
+}
+
+.glass-card {
+    padding: 20px 15px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+}
+
+/* 2. Cabecera Flexible: Si el título y 'Más opciones' no caben, el botón baja solo */
+.glass-card > div:first-child {
+    display: flex !important;
+    flex-wrap: wrap !important; /* Permite el salto de línea */
+    justify-content: space-between !important;
+    align-items: center !important;
+    gap: 15px !important;
+}
+
+/* 3. Filtros y Controles (Enfoque/Papelera): Ordenamiento vertical automático */
+.filter-scroll-container {
+    width: 100% !important;
+    display: flex !important;
+    gap: 10px !important;
+    overflow-x: auto !important;
+    padding: 5px 0 15px 0 !important;
+}
+
+/* Contenedor de Modo Enfoque y Papelera: Se separan y bajan si es necesario */
+div:has(> a[href*="enfoque"]), 
+div:has(> a[href*="papelera"]) {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    justify-content: space-between !important;
+    gap: 10px !important;
+    width: 100% !important;
+    padding: 10px 5px !important;
+}
+
+/* 4. Tarjetas de Tarea: Evita que el texto choque con los iconos */
+.tarea-card {
+    display: grid !important;
+    grid-template-columns: 40px 1fr auto !important;
+    gap: 12px !important;
+    padding: 15px !important;
+    align-items: center !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+.tema-title {
+    font-size: 0.95rem !important;
+    white-space: normal !important; /* El texto baja a la siguiente línea si es largo */
+    word-break: break-word !important;
+}
+
+/* 5. Ajuste para pantallas extra pequeñas (iPhone SE / móviles viejos) */
+@media (max-width: 380px) {
+    .main-title {
+        font-size: 1.2rem !important;
+    }
+    .nav-filter-btn {
+        padding: 8px 12px !important;
+        font-size: 0.75rem !important;
+    }
+    .glass-card {
+        padding: 15px 10px !important;
+    }
+}
+
+/* --- ESTILOS DEL CENTRO DE AYUDA (MODAL RESPONSIVO) --- */
+
+.help-container-wrapper {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    z-index: 10000;
+}
+
+/* Botón flotante circular */
+.help-trigger {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: var(--accent, #ffd700);
+    border: none;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    transition: transform 0.3s;
+}
+
+.help-trigger:hover { transform: scale(1.1); }
+
+/* Card de Ayuda (Glassmorphism) */
+.help-card {
+    position: absolute;
+    bottom: 70px;
+    left: 0;
+    width: 280px;
+    max-width: 85vw; /* Evita que choque con la pared derecha en móviles */
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    overflow: hidden;
+    animation: slideInHelp 0.3s ease-out;
+}
+
+.help-header {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 12px 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.help-title {
+    font-weight: 800;
+    font-size: 0.85rem;
+    color: var(--accent, #ffd700);
+    text-transform: uppercase;
+}
+
+.help-body {
+    padding: 15px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.help-step {
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.help-step:last-child { border: none; }
+
+.help-step strong {
+    display: block;
+    font-size: 0.85rem;
+    color: #fff;
+    margin-bottom: 4px;
+}
+
+.help-step p {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.7);
+    line-height: 1.4;
+    margin: 0;
+}
+
+.btn-help-link {
+    display: block;
+    text-align: center;
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    text-decoration: none;
+    padding: 10px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    margin-top: 10px;
+    transition: background 0.3s;
+}
+
+.btn-help-link:hover { background: rgba(255, 255, 255, 0.2); }
+
+@keyframes slideInHelp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Ajuste móvil extremo */
+@media (max-width: 400px) {
+    .help-card {
+        left: -10px; /* Ajusta la posición para que no se salga */
+        width: 260px;
+    }
+}
+
+/* --- SISTEMA ASISTENTE IA (ESTILOS AVANZADOS) --- */
+
+.ai-float-wrapper {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 10000;
+}
+
+/* Botón del Robot */
+.ai-main-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    padding: 8px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.ai-main-btn:hover {
+    transform: translateY(-5px) scale(1.05);
+    border-color: var(--accent, #ffd700);
+}
+
+.robot-container {
+    position: relative;
+    width: 60px;
+    height: 60px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Auras por Nivel */
+.aura-fx {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    filter: blur(8px);
+    opacity: 0.4;
+    animation: pulseAura 2s infinite alternate;
+}
+
+.lvl-1 .aura-fx { background: #00f2ff; } /* Azul */
+.lvl-3 .aura-fx { background: #ffd700; } /* Oro */
+.lvl-6 .aura-fx { background: #ff00ea; } /* Fucsia */
+
+.robot-icon { font-size: 2rem; z-index: 2; }
+
+.lvl-tag {
+    position: absolute;
+    bottom: -5px;
+    background: #000;
+    color: #fff;
+    font-size: 0.65rem;
+    font-weight: 900;
+    padding: 2px 8px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Panel IA Estilo Glassmorphism */
+.ai-glass-panel {
+    position: absolute;
+    bottom: 85px;
+    right: 0;
+    width: 300px;
+    max-width: 85vw;
+    background: rgba(10, 10, 10, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 24px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+    overflow: hidden;
+    animation: aiPanelEntry 0.4s ease-out;
+}
+
+.ai-header {
+    padding: 15px 20px;
+    background: rgba(255, 255, 255, 0.03);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.pulse-dot {
+    width: 8px;
+    height: 8px;
+    background: #00ff88;
+    border-radius: 50%;
+    box-shadow: 0 0 10px #00ff88;
+    animation: blink 1.5s infinite;
+}
+
+.system-title {
+    font-size: 0.8rem;
+    font-weight: 900;
+    letter-spacing: 1px;
+    color: #fff;
+}
+
+.accent-text { color: var(--accent, #ffd700); }
+
+.ai-body {
+    padding: 30px 20px;
+    position: relative;
+    text-align: center;
+}
+
+/* Barra de Escaneo Animada */
+.ai-scanner-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--accent, #ffd700), transparent);
+    animation: scanLine 2s linear infinite;
+}
+
+.glitch-text {
+    font-family: monospace;
+    font-weight: bold;
+    color: #fff;
+    font-size: 0.9rem;
+    margin-bottom: 10px;
+}
+
+.ai-subtext {
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+/* Animaciones */
+@keyframes scanLine {
+    0% { top: 0%; opacity: 0; }
+    50% { opacity: 1; }
+    100% { top: 100%; opacity: 0; }
+}
+
+@keyframes pulseAura {
+    from { transform: scale(1); opacity: 0.3; }
+    to { transform: scale(1.2); opacity: 0.6; }
+}
+
+@keyframes aiPanelEntry {
+    from { opacity: 0; transform: translateY(20px) scale(0.95); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}
+
+/* Responsive Móvil */
+@media (max-width: 480px) {
+    .ai-glass-panel {
+        right: -10px; /* Ajuste para que no choque con la pared derecha */
+        width: 280px;
+    }
+}
+
+/* --- OPTIMIZACIÓN DE TARJETAS Y COMPATIBILIDAD --- */
+
+/* 1. Corrección de Compatibilidad (Vendor Prefix Fix) */
+/* Reemplaza tu bloque existente que tenga -webkit-background-clip por este */
+.accent-title, /* Asumiendo que esta es tu clase para el título con gradiente */
+.materia-tag /* Y esta para la tag de materia si usa gradiente */ {
+    background: linear-gradient(135deg, var(--accent, #ffd700), #00ff88); /* Asegura gradiente dinámico */
+    -webkit-background-clip: text; /* Mantiene soporte para navegadores antiguos */
+    background-clip: text;        /* Agrega la propiedad ESTÁNDAR para compatibilidad total */
+    -webkit-text-fill-color: transparent;
+    color: transparent; /* Fallback necesario para background-clip: text */
+    display: inline-block; /* Ayuda a la validación del clip en algunos casos */
+}
+
+/* 2. Mejora del Responsivo y Orden de la Tarjeta */
+.tarea-card {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: wrap !important; /* Clave: permite que los elementos bajen si no caben */
+    align-items: center !important;
+    gap: 12px !important;
+    padding: 15px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    border-radius: 16px !important;
+    background: rgba(255, 255, 255, 0.04) !important;
+}
+
+/* Zona del Icono de Estado (Círculo/Check) */
+.tarea-card > .card-action-zone:first-child {
+    flex: 0 0 auto !important;
+    margin-right: 5px !important;
+}
+
+/* Zona Central de Información: Materia, Tema, Fecha, Prioridad */
+.tarea-card > .card-info-zone:nth-child(2) {
+    flex: 1 1 auto !important; /* Ocupa el espacio disponible */
+    min-width: 150px !important; /* Ancho mínimo para que no se deforme en móviles */
+    overflow: hidden !important;
+}
+
+/* Zona de Opciones: Editar/Borrar */
+.tarea-card > .card-options-zone:last-child {
+    flex: 0 0 auto !important;
+    display: flex !important;
+    flex-direction: row !important; /* Forzamos iconos uno al lado del otro */
+    gap: 8px !important;
+    margin-left: auto !important; /* Lo empuja a la derecha */
+    padding-left: 10px !important;
+    border-left: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Mejoras de Texto y Margen de Seguridad */
+.tema-title {
+    font-size: 1rem !important;
+    margin: 3px 0 !important;
+    white-space: normal !important; /* Permite saltos de línea */
+    word-break: break-word !important; /* Rompe palabras si son muy largas */
+}
+
+.materia-tag {
+    font-size: 0.7rem !important;
+    letter-spacing: 0.5px !important;
+}
+
+.meta-data {
+    font-size: 0.75rem !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+}
+
+/* 3. Ajustes Específicos para Móviles muy pequeños */
+@media (max-width: 380px) {
+    .tarea-card {
+        padding: 12px !important;
+        gap: 8px !important;
+    }
+    .tema-title {
+        font-size: 0.9rem !important;
+    }
+    .card-options-zone {
+        padding-left: 8px !important;
+    }
+}
+
+/* --- FIJAR POSICIONES (MEJORA DE SEGURIDAD) --- */
+
+/* Contenedor IA - SIEMPRE DERECHA */
+#ai-assistant-container {
+    position: fixed !important;
+    bottom: 20px !important;
+    right: 20px !important;
+    left: auto !important;
+    z-index: 9999 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-end !important;
+}
+
+/* Contenedor Ayuda - SIEMPRE IZQUIERDA */
+#help-container-root {
+    position: fixed !important;
+    bottom: 20px !important;
+    left: 20px !important;
+    right: auto !important;
+    z-index: 9999 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+}
+
+/* --- MEJORA: CENTRADO DE LA X --- */
+.close-ui-btn, .close-help {
+    width: 32px !important;
+    height: 32px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    border-radius: 8px !important;
+    cursor: pointer !important;
+    color: white !important;
+    font-size: 20px !important; /* Tamaño de la X */
+    line-height: 1 !important;
+    padding: 0 !important;
+}
+
+/* --- PANELES (ABREN HACIA ARRIBA) --- */
+.ai-glass-panel {
+    position: absolute !important;
+    bottom: 85px !important;
+    right: 0 !important;
+    width: 320px !important;
+}
+
+.help-card {
+    position: absolute !important;
+    bottom: 85px !important;
+    left: 0 !important;
+    width: 300px !important;
+}
 </style>
 {% endblock %}

@@ -1,18 +1,15 @@
 {% extends 'layout.html' %} 
 {% block content %} 
 <div class="main-wrapper"> 
-    <div class="glass-card" style="max-width: 900px; padding: 15px;"> 
-        <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 10px;">
-            <h2 style="color: var(--accent); font-size: 1.4rem;">Entregas</h2> 
-            <a href="{{ url_for('index') }}" style="color: var(--text-muted); text-decoration:none; font-weight:700; font-size:0.85rem; flex-shrink:0;">← Tablero</a>
+    <div class="glass-card calendar-container"> 
+        <div class="calendar-header">
+            <h2 class="calendar-title">Entregas</h2> 
+            <a href="{{ url_for('index') }}" class="back-link">← Tablero</a>
         </div>
 
-        <div id='calendar' 
-             data-eventos='{{ eventos | tojson | safe }}'
-             style="background: rgba(255,255,255,0.02); padding: 10px; border-radius: 14px; border: 1px solid var(--glass-border); width: 100%; overflow: hidden;">
-        </div>
+        <div id='calendar' data-eventos='{{ eventos | tojson | safe }}'></div>
     </div> 
-</div> 
+</div>
 
 <link href='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css' rel='stylesheet' />
 <script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js'></script>
@@ -20,52 +17,183 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    var calendarEl = document.getElementById('calendar');
+    const calendarEl = document.getElementById('calendar');
     if (!calendarEl) return;
 
-    var eventosData = [];
-    try {
-        var rawData = calendarEl.getAttribute('data-eventos');
-        if (rawData) {
-            eventosData = JSON.parse(rawData);
-        }
-    } catch (e) {
-        eventosData = [];
-    }
+    // Extraer eventos del atributo data de forma segura
+    const eventosData = JSON.parse(calendarEl.getAttribute('data-eventos') || '[]');
 
-    var calendar = new FullCalendar.Calendar(calendarEl, {
-        initialView: window.innerWidth < 640 ? 'listMonth' : 'dayGridMonth', // Cambia a lista en pantallas pequeñas
+    const calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: window.innerWidth < 640 ? 'listMonth' : 'dayGridMonth',
         locale: 'es',
-        themeSystem: 'standard',
+        firstDay: 1, // Lunes como primer día
         headerToolbar: {
             left: 'prev,next today',
             center: 'title',
-            right: window.innerWidth < 640 ? 'listMonth' : 'dayGridMonth,timeGridWeek,listMonth'
+            right: window.innerWidth < 640 ? 'listMonth' : 'dayGridMonth,listMonth'
         },
         events: eventosData,
         height: 'auto',
-        windowResize: function(view) {
+        expandRows: true,
+        handleWindowResize: true,
+        windowResize: function(arg) {
+            // Cambia la vista dinámicamente al cambiar el tamaño de pantalla
             if (window.innerWidth < 640) {
                 calendar.changeView('listMonth');
             } else {
                 calendar.changeView('dayGridMonth');
             }
+        },
+        eventDidMount: function(info) {
+            // Tooltip básico por si los títulos son largos
+            info.el.title = info.event.title;
         }
     });
-    
+
     calendar.render();
 });
 </script>
 
 <style>
-.fc-theme-standard th, .fc-theme-standard td { border-color: var(--glass-border) !important; }
-.fc .fc-toolbar-title { color: var(--text); font-size: 1rem !important; font-weight: 800; }
-.fc .fc-button-primary { background-color: var(--glass) !important; border-color: var(--glass-border) !important; color: var(--text) !important; font-size: 0.8rem !important; }
-.fc .fc-button-primary:hover { background-color: var(--accent) !important; color: #0f172a !important; }
-.fc .fc-button-active { background-color: var(--accent) !important; color: #0f172a !important; }
-.fc-day-today { background: rgba(56, 189, 248, 0.1) !important; }
-.fc-event-title { font-weight: 700; font-size: 0.8rem; }
-.fc-list-event { background: transparent !important; }
-.fc-list-event:hover td { background: rgba(255,255,255,0.03) !important; }
+    /* --- REFINAMIENTO DE ESTILOS FULLCALENDAR --- */
+
+/* Bordes y Estructura General */
+.fc-theme-standard th, 
+.fc-theme-standard td { 
+    border-color: var(--glass-border) !important; 
+}
+
+#calendar {
+    background: rgba(255, 255, 255, 0.03) !important;
+    padding: 15px;
+    border-radius: 14px;
+    border: 1px solid var(--glass-border);
+    width: 100%;
+    color: var(--text);
+    backdrop-filter: blur(10px); /* Efecto cristal más profundo */
+}
+
+/* Encabezado y Título */
+.fc .fc-toolbar-title { 
+    color: var(--text); 
+    font-size: 1.2rem !important; 
+    font-weight: 800; 
+    text-transform: capitalize;
+}
+
+/* Botones de Navegación */
+.fc .fc-button-primary { 
+    background-color: rgba(255, 255, 255, 0.05) !important; 
+    border: 1px solid var(--glass-border) !important; 
+    color: var(--text) !important; 
+    font-size: 0.8rem !important;
+    text-transform: capitalize !important;
+    transition: all 0.3s ease !important;
+}
+
+.fc .fc-button-primary:hover { 
+    background-color: var(--accent) !important; 
+    color: #0f172a !important; 
+    transform: translateY(-1px);
+}
+
+.fc .fc-button-active { 
+    background-color: var(--accent) !important; 
+    border-color: var(--accent) !important;
+    color: #0f172a !important; 
+}
+
+/* Resaltado del Día Actual */
+.fc-day-today { 
+    background: rgba(var(--accent-rgb, 56, 189, 248), 0.15) !important; 
+}
+
+/* Estilo de Eventos */
+.fc-event {
+    border-radius: 6px !important;
+    border: none !important;
+    padding: 2px 5px !important;
+    cursor: pointer;
+}
+
+.fc-event-title { 
+    font-weight: 700; 
+    font-size: 0.75rem; 
+}
+
+/* Vista de Lista (Móvil) */
+.fc-list-event { 
+    background: transparent !important; 
+}
+
+.fc-list-event:hover td { 
+    background: rgba(255, 255, 255, 0.05) !important; 
+}
+
+/* --- CONTENEDORES --- */
+.calendar-container {
+    max-width: 900px !important;
+    padding: 20px !important;
+    margin: 0 auto !important;
+}
+
+.calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    gap: 15px;
+}
+
+.calendar-title {
+    color: var(--accent);
+    font-size: 1.5rem;
+    margin: 0;
+}
+
+.back-link {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+    padding: 5px 10px;
+    border-radius: 8px;
+}
+
+.back-link:hover {
+    color: var(--accent);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+/* --- RESPONSIVIDAD MEJORADA --- */
+@media (max-width: 640px) {
+    .calendar-container {
+        padding: 10px !important;
+    }
+    
+    .fc .fc-toolbar {
+        flex-direction: column !important;
+        gap: 15px;
+    }
+
+    .fc .fc-toolbar-title {
+        font-size: 1.1rem !important;
+    }
+
+    /* En móvil, los botones de navegación ocupan el ancho completo */
+    .fc .fc-toolbar-chunk {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        gap: 5px;
+    }
+
+    .fc .fc-button {
+        padding: 6px 12px !important;
+        font-size: 0.8rem !important;
+        flex-grow: 1;
+    }
+}
 </style>
 {% endblock %}

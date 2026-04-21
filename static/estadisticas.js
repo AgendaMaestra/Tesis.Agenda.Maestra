@@ -35,3 +35,21 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
 });
+
+function toggleAssistant() {
+    const panel = document.getElementById('ai-panel');
+    if (panel.style.display === 'none' || panel.style.display === '') {
+        panel.style.display = 'block';
+    } else {
+        panel.style.display = 'none';
+    }
+}
+
+function toggleHelp() {
+    const modal = document.getElementById('help-modal');
+    if (modal.style.display === 'none' || modal.style.display === '') {
+        modal.style.display = 'block';
+    } else {
+        modal.style.display = 'none';
+    }
+}

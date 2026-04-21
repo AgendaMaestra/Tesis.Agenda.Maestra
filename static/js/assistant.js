@@ -166,3 +166,27 @@ document.addEventListener('click', function(event) {
         modal.style.display = 'none';
     }
 });
+
+function toggleMenu(event) {
+    event.stopPropagation();
+    const menu = document.getElementById('dropdown-perfil');
+    menu.classList.toggle('active');
+}
+
+// 2. FUNCION PARA AMPLIAR LA IMAGEN
+function abrirModalImagen() {
+    const modal = document.getElementById('modalImagen');
+    modal.style.display = 'flex';
+    // Cerramos el menú al abrir el modal
+    document.getElementById('dropdown-perfil').classList.remove('active');
+}
+
+function cerrarModal() {
+    document.getElementById('modalImagen').style.display = 'none';
+}
+
+// 3. CERRAR MENU SI SE TOCA FUERA
+document.addEventListener('click', function() {
+    const menu = document.getElementById('dropdown-perfil');
+    if (menu) menu.classList.remove('active');
+});
