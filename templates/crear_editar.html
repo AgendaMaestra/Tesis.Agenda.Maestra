@@ -44,6 +44,22 @@
                      </div>
                  </div>
              </div>
+
+             <!-- SECCIÓN DE TAREAS GRUPALES (Ahora dentro del Form) -->
+             <div class="input-group" style="margin-bottom: 20px;">
+                <label style="font-size:0.75rem; font-weight:800; opacity:0.5; text-transform:uppercase;">Modalidad de Trabajo</label>
+                <select name="tipo_tarea" id="tipo_tarea" onchange="toggleGrupo()" 
+                        style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 12px; color: white;">
+                    <option value="individual">Individual</option>
+                    <option value="grupal">Grupal (Colaborativa)</option>
+                </select>
+            </div>
+
+            <div id="campo-colaboradores" style="display: none; margin-bottom: 20px;">
+                <label style="font-size: 0.7rem; opacity: 0.5; text-transform:uppercase;">Correos de Compañeros (Separados por coma)</label>
+                <input type="text" name="colaboradores" placeholder="ejemplo1@mail.com, ejemplo2@mail.com"
+                       style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 12px; color: white;">
+            </div>
                          
              <input type="checkbox" name="importante" id="imp-check" style="display:none;" {{ 'checked' if tarea and tarea.importante else '' }}> 
                          
@@ -58,10 +74,24 @@
              <button type="submit" class="btn-main" style="margin-top: 10px;">GUARDAR ELEMENTO</button> 
              <a href="{{ url_for('index') }}" style="display:block; text-align:center; margin-top:20px; color:var(--text-muted); text-decoration:none; font-size:0.85rem; font-weight: 700;">Cancelar y salir</a> 
          </form> 
-     </div> 
-</div> 
+     </div>
+</div>
 
-<script> 
+<script>
+    // Función para mostrar/ocultar el campo de colaboradores
+    function toggleGrupo() {
+        const tipo = document.getElementById('tipo_tarea').value;
+        const campo = document.getElementById('campo-colaboradores');
+        campo.style.display = (tipo === 'grupal') ? 'block' : 'none';
+    }
+
+    // Lógica para el toggle de prioridad (asegúrate de tener esto para que el diseño funcione)
+    document.getElementById('priority-trigger').addEventListener('click', function() {
+        this.classList.toggle('active');
+        const checkbox = document.getElementById('imp-check');
+        checkbox.checked = !checkbox.checked;
+    });
+
      const trigger = document.getElementById('priority-trigger'); 
      const checkbox = document.getElementById('imp-check'); 
      

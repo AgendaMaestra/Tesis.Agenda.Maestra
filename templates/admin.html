@@ -1,37 +1,77 @@
 {% extends 'layout.html' %} 
 {% block content %} 
-<div class="main-wrapper"> 
+<div class="main-wrapper admin-view"> 
     <div class="glass-card admin-container"> 
+        
         <div class="admin-header">
-            <h2 class="admin-title">Panel Administrador</h2> 
-            <a href="{{ url_for('index') }}" class="back-link">← Volver al tablero</a>
+            <div class="header-info">
+                <div class="system-badge">SISTEMA MAESTRO</div>
+                <h2 class="admin-title">Panel de Control</h2> 
+            </div>
+            <a href="{{ url_for('index') }}" class="back-link">
+                <span class="icon">←</span> Volver al Tablero
+            </a>
         </div>
 
         <div class="admin-stats">
             <div class="stat-card">
-                <span class="stat-label">Tareas Globales</span>
-                <span class="stat-value">{{ tareas }}</span>
+                <div class="stat-content">
+                    <span class="stat-label">Tareas Globales</span>
+                    <span class="stat-value">{{ tareas }}</span>
+                </div>
             </div>
             <div class="stat-card">
-                <span class="stat-label">Usuarios Activos</span>
-                <span class="stat-value">{{ usuarios|length }}</span>
+                <div class="stat-content">
+                    <span class="stat-label">Usuarios Activos</span>
+                    <span class="stat-value">{{ usuarios|length }}</span>
+                </div>
             </div>
         </div>
 
-        <h3 class="section-subtitle">Usuarios registrados</h3> 
+        <div class="section-divider">
+            <h3 class="section-subtitle">Métricas de Usuarios</h3>
+            <span class="user-count">{{ usuarios|length }} Registrados</span>
+        </div>
+
         <div class="table-wrapper">
             <table class="admin-table">
                 <thead>
                     <tr>
-                        <th>Nombre de Usuario</th>
+                        <th>Identidad</th>
+                        <th style="text-align: center;">Rango de Nivel</th>
+                        <th style="text-align: center;">Fuego (Racha)</th>
                         <th style="text-align: right;">Estado</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for u in usuarios %} 
-                    <tr>
-                        <td>{{ u.usuario }}</td>
-                        <td style="text-align: right;"><span class="status-pill">Activo</span></td>
+                    <tr class="table-row-hover">
+                        <td>
+                            <div class="user-cell">
+                                <div class="user-avatar">{{ u.usuario[0].upper() }}</div>
+                                <span class="user-name">{{ u.usuario }}</span>
+                            </div>
+                        </td>
+                        <td style="text-align: center;">
+                            <div class="rank-badge">
+                                <span class="rank-level">NIVEL {{ u.nivel }}</span>
+                                <span class="rank-name">
+                                    {% if u.nivel < 5 %} Aspirante
+                                    {% elif u.nivel < 15 %} Erudito
+                                    {% else %} Maestro
+                                    {% endif %}
+                                </span>
+                            </div>
+                        </td>
+                        <td style="text-align: center;">
+                            <div class="streak-cell">
+                                <span class="streak-icon">🔥</span>
+                                <span class="streak-value">{{ u.racha }}</span>
+                            </div>
+                        </td>
+                        <td style="text-align: right;">
+                            <span class="status-pill pulse">Activo</span>
+                        </td>
                     </tr>
                     {% endfor %} 
                 </tbody>
@@ -41,113 +81,271 @@
 </div> 
 
 <style>
-/* --- ESTILOS PANEL ADMINISTRADOR --- */
+/* --- ESTILOS PANEL ADMINISTRADOR REFACTORIZADO --- */
+
+.admin-view {
+    padding: 20px;
+    animation: fadeIn 0.6s ease;
+}
 
 .admin-container {
-    max-width: 800px !important;
-    padding: 30px !important;
+    max-width: 1000px !important;
+    padding: 40px !important;
     margin: 0 auto !important;
+    border: 1px solid var(--glass-border) !important;
 }
 
 .admin-header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    margin-bottom: 30px;
+    align-items: flex-start;
+    margin-bottom: 40px;
+}
+
+.system-badge {
+    background: rgba(56, 189, 248, 0.1);
+    color: var(--accent);
+    font-size: 0.65rem;
+    font-weight: 900;
+    padding: 4px 10px;
+    border-radius: 5px;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+    display: inline-block;
 }
 
 .admin-title {
-    color: var(--accent);
-    font-size: 1.6rem;
+    color: white;
+    font-size: 1.8rem;
+    font-weight: 800;
     margin: 0;
 }
 
-/* Tarjetas de Stats */
+.back-link {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 700;
+    padding: 10px 15px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 10px;
+    transition: all 0.2s;
+}
+
+.back-link:hover {
+    background: rgba(255,255,255,0.08);
+    color: white;
+}
+
 .admin-stats {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 15px;
-    margin-bottom: 30px;
+    gap: 20px;
+    margin-bottom: 40px;
 }
 
 .stat-card {
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid var(--glass-border);
-    padding: 15px;
-    border-radius: 12px;
+    padding: 25px;
+    border-radius: 16px;
     display: flex;
-    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    transition: transform 0.3s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-5px);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.stat-icon {
+    font-size: 2rem;
+    background: rgba(255,255,255,0.05);
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 14px;
 }
 
 .stat-label {
-    font-size: 0.7rem;
+    display: block;
+    font-size: 0.75rem;
     text-transform: uppercase;
-    opacity: 0.6;
+    opacity: 0.5;
     font-weight: 800;
+    margin-bottom: 4px;
 }
 
 .stat-value {
-    font-size: 1.5rem;
+    font-size: 1.8rem;
     font-weight: 900;
     color: var(--accent);
 }
 
-/* Tabla de Usuarios */
+.section-divider {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding: 0 5px;
+}
+
+.section-subtitle {
+    font-size: 0.9rem;
+    font-weight: 800;
+    opacity: 0.8;
+}
+
+.user-count {
+    font-size: 0.75rem;
+    opacity: 0.5;
+}
+
 .table-wrapper {
-    overflow-x: auto; /* Permite scroll horizontal si la pantalla es muy chica */
-    border-radius: 10px;
+    background: rgba(0,0,0,0.2);
+    border-radius: 16px;
+    border: 1px solid var(--glass-border);
+    overflow: hidden;
 }
 
 .admin-table {
     width: 100%;
     border-collapse: collapse;
-    margin-top: 10px;
 }
 
 .admin-table th {
     text-align: left;
-    padding: 12px;
-    font-size: 0.75rem;
+    padding: 18px 20px;
+    font-size: 0.7rem;
     text-transform: uppercase;
-    opacity: 0.5;
+    opacity: 0.4;
+    letter-spacing: 1px;
     border-bottom: 1px solid var(--glass-border);
 }
 
 .admin-table td {
-    padding: 15px 12px;
-    border-bottom: 1px solid rgba(255,255,255,0.05);
+    padding: 15px 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
     font-size: 0.95rem;
+    vertical-align: middle;
 }
 
+/* Identidad */
+.user-cell {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.user-avatar {
+    width: 32px;
+    height: 32px;
+    background: var(--accent);
+    color: var(--bg-dark);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 900;
+    font-size: 0.8rem;
+}
+
+/* Rango de Nivel */
+.rank-badge {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.rank-level {
+    font-size: 0.7rem;
+    font-weight: 900;
+    color: var(--accent);
+}
+
+.rank-name {
+    font-size: 0.85rem;
+    opacity: 0.7;
+    font-weight: 600;
+}
+
+/* Racha */
+.streak-cell {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 165, 2, 0.1);
+    padding: 5px 12px;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 165, 2, 0.2);
+}
+
+.streak-icon {
+    font-size: 1rem;
+}
+
+.streak-value {
+    color: #ffa502;
+    font-weight: 900;
+    font-size: 0.9rem;
+}
+
+/* Estado */
 .status-pill {
     background: rgba(0, 255, 136, 0.1);
     color: #00ff88;
-    padding: 4px 8px;
-    border-radius: 6px;
+    padding: 6px 12px;
+    border-radius: 8px;
     font-size: 0.7rem;
     font-weight: 800;
+    display: inline-block;
+}
+
+.pulse {
+    box-shadow: 0 0 0 0 rgba(0, 255, 136, 0.4);
+    animation: pulse-green 2s infinite;
+}
+
+@keyframes pulse-green {
+    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 255, 136, 0.7); }
+    70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(0, 255, 136, 0); }
+    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 255, 136, 0); }
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 /* --- RESPONSIVIDAD MÓVIL --- */
 @media (max-width: 600px) {
     .admin-container {
-        padding: 20px 15px !important;
+        padding: 25px 15px !important;
     }
 
     .admin-header {
         flex-direction: column;
-        gap: 10px;
+        align-items: center;
+        gap: 20px;
         text-align: center;
     }
 
     .admin-stats {
-        grid-template-columns: 1fr; /* Una columna en móvil */
+        grid-template-columns: 1fr;
     }
 
-    .stat-value {
-        font-size: 1.2rem;
+    /* Ocultar Racha en móvil muy pequeño para evitar desborde */
+    th:nth-child(3), td:nth-child(3) {
+        display: none;
+    }
+
+    .stat-card {
+        padding: 15px;
     }
 }
 </style>
-
 {% endblock %}

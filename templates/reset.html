@@ -1,0 +1,49 @@
+{% extends 'layout.html' %} 
+{% block content %} 
+<div class="main-wrapper" style="display: flex; align-items: center; justify-content: center; min-height: 80vh;"> 
+     <div class="glass-card" style="text-align: center; max-width: 400px; width: 100%; border: 1px solid var(--glass-border); padding: 40px; border-radius: 24px; background: var(--glass); backdrop-filter: blur(12px);"> 
+         
+         <h1 style="font-weight:800; margin-bottom:10px; color: var(--accent); letter-spacing: -0.5px;">NUEVA CLAVE</h1> 
+         <p style="margin-bottom:30px; opacity:0.6; font-size: 0.95rem;">Establece tu nueva contraseña de acceso</p> 
+                  
+         <form method="POST" id="reset-form"> 
+             <label style="display:block; text-align:left; font-size:0.75rem; font-weight:800; opacity:0.5; margin-bottom:5px; text-transform: uppercase;">Nueva Contraseña</label>
+             <input type="password" name="password" id="password" placeholder="Mínimo 8 caracteres" required 
+                    style="width: 100%; padding: 14px; margin-bottom: 20px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 12px; color: white; outline: none;"> 
+             
+             <label style="display:block; text-align:left; font-size:0.75rem; font-weight:800; opacity:0.5; margin-bottom:5px; text-transform: uppercase;">Confirmar Contraseña</label>
+             <input type="password" id="confirm_password" placeholder="Repite tu contraseña" required 
+                    style="width: 100%; padding: 14px; margin-bottom: 10px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 12px; color: white; outline: none;"> 
+
+             <div style="text-align: left; font-size: 0.75rem; opacity: 0.5; margin-bottom: 25px; line-height: 1.4;">
+                • Usa al menos 8 caracteres<br>
+                • La contraseña debe ser idéntica en ambos campos
+             </div>
+
+             <button type="submit" class="btn-main" style="width: 100%; background: var(--accent); color: var(--bg-dark); font-weight: 800; padding: 14px; border-radius: 12px; border: none; cursor: pointer; transition: transform 0.2s;">
+                ACTUALIZAR ACCESO
+             </button> 
+         </form> 
+     </div> 
+</div> 
+
+<script>
+    // Validación de seguridad en el lado del cliente para una respuesta inmediata
+    document.getElementById('reset-form').addEventListener('submit', function(e) {
+        const pass = document.getElementById('password').value;
+        const confirm = document.getElementById('confirm_password').value;
+        
+        if (pass.length < 8) {
+            e.preventDefault();
+            alert("La contraseña es muy corta. Debe tener al menos 8 caracteres.");
+            return;
+        }
+        
+        if (pass !== confirm) {
+            e.preventDefault();
+            alert("Las contraseñas no coinciden. Por favor, asegúrate de escribir lo mismo en ambos campos.");
+            return;
+        }
+    });
+</script>
+{% endblock %}

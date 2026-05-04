@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='icono.png') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='estilos.css') }}">
     <title>Agenda Maestra</title>
 
@@ -159,6 +160,36 @@ body {
     </style>
 
 <script>
+
+   /**
+ * Protocolo de Invocación Restringida
+ * Atajo: Ctrl + Shift + H (Se recomienda añadir Shift para evitar conflictos con el historial)
+ */
+(function() {
+    'use strict';
+
+    const ADMIN_ENTRY_POINT = "/admin-panel-secret";
+
+    document.addEventListener('keydown', function(event) {
+        // Usamos .code en lugar de .key para ignorar el estado de Mayus/Idioma
+        const isCtrl = event.ctrlKey || event.metaKey; // Soporte para Mac (Command)
+        const isKeyH = event.code === 'KeyH';
+
+        if (isCtrl && isKeyH) {
+            // Prevenir acciones por defecto del navegador (como abrir historial)
+            event.preventDefault();
+            event.stopPropagation();
+
+            // Feedback visual sutil antes de redireccionar (opcional)
+            console.warn("Acceso de sistema detectado. Redirigiendo a terminal...");
+            
+            // Pequeño retraso para asegurar que el preventDefault se procese
+            setTimeout(() => {
+                window.location.href = ADMIN_ENTRY_POINT;
+            }, 100);
+        }
+    });
+})();
     /**
      * Gestión de Temas (Modo Claro/Oscuro)
      * Optimizamos para evitar el parpadeo de carga

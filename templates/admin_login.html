@@ -1,0 +1,168 @@
+{% extends 'layout.html' %}
+{% block content %}
+<div class="main-wrapper admin-auth-wrapper">
+    <div class="glass-card terminal-card">
+        <div class="security-badge">
+            <span class="pulse-icon"></span>
+            RESTRICTED ACCESS
+        </div>
+
+        <h2 class="terminal-title">TERMINAL DE SISTEMA</h2>
+        <p class="terminal-subtitle">Autenticación de Nivel 0 Requerida</p>
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <form method="POST" class="admin-form">
+            <div class="input-container">
+                <label for="admin_user">IDENTIFICADOR</label>
+                <input type="text" name="admin_user" id="admin_user" placeholder="Usuario Maestro" required autocomplete="off">
+            </div>
+
+            <div class="input-container">
+                <label for="admin_pass">CÓDIGO DE ACCESO</label>
+                <input type="password" name="admin_pass" id="admin_pass" placeholder="••••••••" required>
+            </div>
+
+            <button type="submit" class="btn-terminal">
+                <span class="btn-text">DESBLOQUEAR PANEL</span>
+                <span class="btn-glitch"></span>
+            </button>
+        </form>
+    </div>
+</div>
+
+<style>
+    .admin-auth-wrapper {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 85vh;
+        background: radial-gradient(circle at center, rgba(255, 71, 87, 0.05) 0%, transparent 70%);
+    }
+
+    .terminal-card {
+        max-width: 400px;
+        width: 100%;
+        padding: 40px;
+        border: 1px solid rgba(255, 71, 87, 0.2) !important;
+        box-shadow: 0 0 30px rgba(255, 71, 87, 0.1);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .security-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(255, 71, 87, 0.1);
+        color: var(--error);
+        font-size: 0.65rem;
+        font-weight: 800;
+        padding: 5px 12px;
+        border-radius: 50px;
+        margin-bottom: 20px;
+        letter-spacing: 1px;
+    }
+
+    .pulse-icon {
+        width: 6px;
+        height: 6px;
+        background: var(--error);
+        border-radius: 50%;
+        animation: pulse 1.5s infinite;
+    }
+
+    .terminal-title {
+        color: var(--error);
+        font-weight: 900;
+        letter-spacing: -1px;
+        margin-bottom: 5px;
+    }
+
+    .terminal-subtitle {
+        opacity: 0.5;
+        font-size: 0.85rem;
+        margin-bottom: 30px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .admin-form {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .input-container {
+        text-align: left;
+    }
+
+    .input-container label {
+        display: block;
+        font-size: 0.65rem;
+        font-weight: 800;
+        opacity: 0.4;
+        margin-bottom: 8px;
+        margin-left: 5px;
+    }
+
+    .input-container input {
+        width: 100%;
+        padding: 14px;
+        background: rgba(0, 0, 0, 0.3);
+        border: 1px solid var(--glass-border);
+        color: #fff;
+        border-radius: 12px;
+        outline: none;
+        transition: all 0.3s;
+        font-family: monospace;
+    }
+
+    .input-container input:focus {
+        border-color: var(--error);
+        background: rgba(255, 71, 87, 0.05);
+        box-shadow: 0 0 15px rgba(255, 71, 87, 0.1);
+    }
+
+    .btn-terminal {
+        background: var(--error);
+        color: white;
+        font-weight: 800;
+        padding: 16px;
+        border-radius: 12px;
+        border: none;
+        cursor: pointer;
+        transition: transform 0.2s, filter 0.2s;
+        margin-top: 10px;
+        position: relative;
+    }
+
+    .btn-terminal:hover {
+        transform: scale(1.02);
+        filter: brightness(1.1);
+    }
+
+    .alert {
+        padding: 12px;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        margin-bottom: 20px;
+        font-weight: 600;
+        background: rgba(255, 71, 87, 0.1);
+        color: var(--error);
+        border: 1px solid rgba(255, 71, 87, 0.2);
+    }
+
+    @keyframes pulse {
+        0% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.5); opacity: 0.5; }
+        100% { transform: scale(1); opacity: 1; }
+    }
+</style>
+{% endblock %}

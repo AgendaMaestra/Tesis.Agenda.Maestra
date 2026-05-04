@@ -1,35 +1,47 @@
 {% extends 'layout.html' %} 
 {% block content %} 
 <div class="main-wrapper"> 
-     <div class="glass-card" style="text-align: center;"> 
-         <h1 style="font-weight:800; margin-bottom:10px;">NUEVA CUENTA</h1> 
-         <p style="margin-bottom:30px; opacity:0.6; font-size: 0.95rem;">Únete a la agenda estudiantil</p> 
+     <div class="glass-card" style="text-align: center; max-width: 450px; margin: 0 auto;"> 
+         <h1 style="font-weight:800; margin-bottom:10px; letter-spacing: -1px;">NUEVA CUENTA</h1> 
+         <p style="margin-bottom:30px; opacity:0.6; font-size: 0.9rem;">Únete a la terminal estudiantil</p> 
                   
-         <form method="POST" enctype="multipart/form-data"> 
-             <label style="display:block; text-align:left; font-size:0.75rem; font-weight:800; opacity:0.5; margin-bottom:5px;">USUARIO</label>
-             <input type="text" name="usuario" placeholder="Elige un nombre de usuario" required> 
+         <form method="POST" enctype="multipart/form-data" id="registro-form" class="auth-form"> 
              
-             <label style="display:block; text-align:left; font-size:0.75rem; font-weight:800; opacity:0.5; margin-bottom:5px;">CONTRASEÑA</label>
-             <input type="password" name="password" placeholder="Crea una contraseña segura" required> 
-
-             <label style="display:block; text-align:left; font-size:0.75rem; font-weight:800; opacity:0.5; margin-bottom:5px;">CORREO ELECTRÓNICO</label>
-             <input type="email" name="email" placeholder="ejemplo@correo.com" style="width: 100%; background: rgba(255, 255, 255, 0.04); border: 1px solid var(--glass-border); padding: 16px; border-radius: 16px; color: var(--text); font-size: 1rem; margin-bottom: 20px; outline: none;" required> 
-
-             <label style="display:block; text-align:left; font-size:0.75rem; font-weight:800; opacity:0.5; margin-bottom:5px;">FECHA DE CUMPLEAÑOS</label>
-             <input type="date" name="cumpleanos" required> 
-
-             <label style="display:block; text-align:left; font-size:0.75rem; font-weight:800; opacity:0.5; margin-bottom:5px;">FOTO DE PERFIL</label>
+             <div class="input-group">
+                 <label>Nombre de Usuario</label>
+                 <input type="text" name="usuario" placeholder="Elige un nombre de usuario" maxlength="20" required> 
+             </div>
              
-             <div style="margin-bottom: 25px;">
-                 <label for="input-archivo" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 25px; border: 2px dashed var(--glass-border); border-radius: 18px; background: rgba(255, 255, 255, 0.02); cursor: pointer; transition: all 0.3s;" id="label-archivo">
-                     <span style="font-size: 1.5rem; margin-bottom: 8px;">🖼️</span>
-                     <span style="font-weight: 700; font-size: 0.9rem; color: var(--accent);" id="texto-archivo">Subir desde la computadora</span>
-                     <span style="font-size: 0.75rem; opacity: 0.5; margin-top: 4px;">Archivos .jpg, .png o .jpeg</span>
-                 </label>
-                 <input type="file" name="foto_perfil" id="input-archivo" accept="image/*" style="display: none;">
+             <div class="input-group">
+                 <label>Contraseña</label>
+                 <input type="password" name="password" id="password" placeholder="Mínimo 8 caracteres" required> 
              </div>
 
-             <button type="submit" class="btn-main" style="margin-top: 10px; background: var(--success); color:#fff;">CREAR MI CUENTA</button> 
+             <div class="input-group">
+                 <label>Correo Electrónico</label>
+                 <input type="email" name="email" placeholder="ejemplo@correo.com" required> 
+             </div>
+
+             <div class="input-group">
+                 <label>Fecha de Cumpleaños</label>
+                 <input type="date" name="cumpleanos" required> 
+             </div>
+
+             <div class="input-group">
+                 <label>Foto de Perfil</label>
+                 <div class="file-upload-container">
+                     <label for="input-archivo" class="upload-zone" id="label-archivo">
+                         <span class="upload-icon"></span>
+                         <span id="texto-archivo" class="upload-text">Subir desde la computadora</span>
+                         <span class="upload-hint">Archivos .jpg, .png o .jpeg</span>
+                     </label>
+                     <input type="file" name="foto_perfil" id="input-archivo" accept="image/*" style="display: none;">
+                 </div>
+             </div>
+
+             <button type="submit" class="btn-main" style="margin-top: 10px; background: var(--success); width: 100%; font-weight: 800;">
+                 CREAR MI CUENTA
+             </button> 
          </form> 
                   
          <p style="margin-top:30px; font-size: 0.9rem; opacity: 0.7;"> 
@@ -38,17 +50,120 @@
      </div> 
 </div> 
 
-<script>
-    const inputArchivo = document.getElementById('input-archivo');
-    const labelArchivo = document.getElementById('label-archivo');
-    const textoArchivo = document.getElementById('texto-archivo');
+<style>
+    .auth-form {
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+    }
+    .input-group {
+        text-align: left;
+    }
+    .input-group label {
+        display: block;
+        font-size: 0.7rem;
+        font-weight: 800;
+        opacity: 0.5;
+        text-transform: uppercase;
+        margin-bottom: 6px;
+        margin-left: 5px;
+    }
+    .input-group input {
+        width: 100%;
+        padding: 14px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid var(--glass-border);
+        border-radius: 12px;
+        color: var(--text);
+        font-size: 0.95rem;
+        outline: none;
+        transition: 0.3s;
+    }
+    .input-group input:focus {
+        border-color: var(--accent);
+        background: rgba(255, 255, 255, 0.08);
+        box-shadow: 0 0 15px rgba(56, 189, 248, 0.15);
+    }
+    .upload-zone {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        border: 2px dashed var(--glass-border);
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.02);
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    .upload-zone:hover {
+        border-color: var(--accent);
+        background: rgba(56, 189, 248, 0.05);
+    }
+    .upload-icon { font-size: 1.5rem; margin-bottom: 5px; }
+    .upload-text { font-weight: 700; font-size: 0.85rem; color: var(--accent); }
+    .upload-hint { font-size: 0.7rem; opacity: 0.5; margin-top: 4px; }
+    
+    /* Clase para cuando el archivo está seleccionado */
+    .upload-active {
+        border-color: var(--success) !important;
+        background: rgba(46, 213, 115, 0.05) !important;
+    }
+</style>
 
-    inputArchivo.addEventListener('change', function(e) {
-        if(this.files && this.files.length > 0) {
-            textoArchivo.innerText = "Seleccionado: " + this.files[0].name;
-            labelArchivo.style.borderColor = "var(--accent)";
-            labelArchivo.style.background = "rgba(56, 189, 248, 0.05)";
-        }
-    });
+<script>
+document.getElementById('registro-form').addEventListener('submit', function(e) {
+    const usuario = this.querySelector('input[name="usuario"]');
+    const password = this.querySelector('input[name="password"]');
+    const commonPasswords = ['123456', 'password', 'qwerty', 'admin123', '12345678'];
+    
+    // 1. Limpieza de espacios
+    const userVal = usuario.value.trim();
+    const passVal = password.value;
+
+    // 2. Validaciones de seguridad
+    if (userVal.length < 3) {
+        e.preventDefault();
+        alert("El nombre de usuario es demasiado corto.");
+        return;
+    }
+
+    if (passVal.length < 8) {
+        e.preventDefault();
+        alert("Seguridad baja: La contraseña debe tener al menos 8 caracteres.");
+        return;
+    }
+
+    if (passVal.toLowerCase() === userVal.toLowerCase()) {
+        e.preventDefault();
+        alert("Seguridad baja: La contraseña no puede ser igual al nombre de usuario.");
+        return;
+    }
+
+    if (commonPasswords.includes(passVal.toLowerCase())) {
+        e.preventDefault();
+        alert("Seguridad insuficiente: Por favor, utiliza una clave más compleja.");
+        return;
+    }
+});
+
+// Interacción del Input de Archivo
+const inputArchivo = document.getElementById('input-archivo');
+const labelArchivo = document.getElementById('label-archivo');
+const textoArchivo = document.getElementById('texto-archivo');
+
+inputArchivo.addEventListener('change', function() {
+    if(this.files && this.files.length > 0) {
+        const nombreCorte = this.files[0].name.length > 25 
+            ? this.files[0].name.substring(0, 22) + "..." 
+            : this.files[0].name;
+            
+        textoArchivo.innerText = "Archivo: " + nombreCorte;
+        labelArchivo.classList.add('upload-active');
+    } else {
+        textoArchivo.innerText = "Subir desde la computadora";
+        labelArchivo.classList.remove('upload-active');
+    }
+});
 </script>
 {% endblock %}

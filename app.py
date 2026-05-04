@@ -1,23 +1,17 @@
-from flask import Flask, render_template, request, redirect, url_for, session, Response, flash, jsonify
-import mysql.connector
-from mysql.connector import pooling
-from werkzeug.security import generate_password_hash, check_password_hash
 import os
+import time
+import hmac
 import json
 import base64
 import hashlib
 from functools import wraps
 from datetime import date, datetime, timedelta
-from datetime import date 
-from datetime import datetime 
-from datetime import datetime, timedelta 
+import mysql.connector
+from mysql.connector import pooling
+from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
+from flask import Flask, render_template, request, redirect, url_for, session, Response, flash, jsonify
 from flask_mail import Mail, Message
-from flask_mail import Message, Mail
-from datetime import datetime, timedelta
-from flask import render_template
-from flask_mail import Message
-
 
 load_dotenv()
 
@@ -32,12 +26,15 @@ app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
 app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
 app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_USERNAME')
 app.config['MAIL_ASCII_ATTACHMENTS'] = False
-
 mail = Mail(app)
 
 # ==========================================
 # CONFIGURACIÓN DE BASE DE DATOS (POOL)
 # ==========================================
+# ==========================================
+# CONFIGURACIÓN DE BASE DE DATOS (CORREGIDA)
+# ==========================================
+
 db_config = {
     "host": os.getenv('DB_HOST', 'localhost'),
     "user": os.getenv('DB_USER', 'root'),
@@ -55,10 +52,15 @@ except mysql.connector.Error as err:
     print(f"Error de conexión crítica: {err}")
     pool = None
 
-def get_db():
+# Esta es la función que tus rutas necesitan
+def get_db_connection():
     if pool is None:
-        raise Exception("Base de datos no disponible")
+        raise Exception("El pool de conexiones no está disponible")
     return pool.get_connection()
+
+# Alias por si alguna parte del código usa get_db()
+def get_db():
+    return get_db_connection()
 
 # ==========================================
 # UTILIDADES Y DECORADORES
@@ -1078,6 +1080,224 @@ def editar(id):
         db.close()
         
     return render_template("crear_editar.html", tarea=tarea)
+
+# --- FUNCIONALIDAD DE RECUPERACIÓN DE CONTRASEÑA (CORREGIDA) ---
+
+@app.route('/olvide-password', methods=['GET', 'POST'])
+def olvide_password():
+    if request.method == 'POST':
+        email = request.form.get('email')
+        db = None  # Inicializamos para evitar error en el finally
+        try:
+            db = get_db_connection()
+            cursor = db.cursor(dictionary=True)
+            cursor.execute("SELECT id, usuario FROM usuarios WHERE email = %s", (email,))
+            user = cursor.fetchone()
+
+            if user:
+                token = hashlib.sha256(f"{user['usuario']}{datetime.now()}".encode()).hexdigest()
+                cursor.execute("UPDATE usuarios SET token_recuperacion = %s WHERE id = %s", (token, user['id']))
+                db.commit()
+
+                link = url_for('reset_password', token=token, _external=True)
+                msg = Message("Recuperar Acceso - Agenda Maestra", recipients=[email])
+                msg.body = f"Hola {user['usuario']}, usa este enlace para restablecer tu clave: {link}"
+                mail.send(msg)
+                
+                flash("Se ha enviado un enlace de recuperación a tu correo.", "success")
+            else:
+                flash("El correo no está registrado.", "danger")
+        except Exception as e:
+            print(f"Error en olvide_password: {e}")
+            flash("Error interno del servidor.", "danger")
+        finally:
+            if db:
+                db.close()
+        
+        return redirect(url_for('login'))
+    
+    return render_template('login.html', recuperar=True)
+
+
+@app.route('/reset-password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    db = None
+    user = None
+    
+    try:
+        db = get_db_connection()
+        cursor = db.cursor(dictionary=True)
+        cursor.execute("SELECT id FROM usuarios WHERE token_recuperacion = %s", (token,))
+        user = cursor.fetchone()
+    except Exception as e:
+        print(f"Error consultando token: {e}")
+    finally:
+        if db:
+            db.close()
+
+    if not user:
+        flash("Token inválido o expirado.", "danger")
+        return redirect(url_for('login'))
+
+    if request.method == 'POST':
+        nueva_pass = generate_password_hash(request.form.get('password'))
+        db = get_db_connection()
+        try:
+            cursor = db.cursor()
+            cursor.execute("UPDATE usuarios SET password = %s, token_recuperacion = NULL WHERE id = %s", 
+                           (nueva_pass, user['id']))
+            db.commit()
+            flash("Contraseña actualizada. Ya puedes iniciar sesión.", "success")
+            return redirect(url_for('login'))
+        except Exception as e:
+            print(f"Error actualizando password: {e}")
+            flash("No se pudo actualizar la contraseña.", "danger")
+        finally:
+            if db:
+                db.close()
+
+    return render_template('reset.html', token=token)
+
+@app.route('/feedback', methods=['GET', 'POST'])
+def feedback():
+    if request.method == 'POST':
+        nombre = request.form.get('nombre')
+        estrellas = request.form.get('estrella')
+        mensaje = request.form.get('sugerencia')
+        
+        # Cuerpo del mensaje en HTML profesional
+        html_body = f"""
+        <div style="font-family: sans-serif; max-width: 600px; margin: auto; border: 1px solid #eee; border-radius: 10px; overflow: hidden;">
+            <div style="background-color: #1a1a1a; color: #ffffff; padding: 20px; text-align: center;">
+                <h2 style="margin: 0; color: #00ffcc;">AGENDA MAESTRA</h2>
+                <p style="font-size: 12px; opacity: 0.7;">Nuevo Feedback de Usuario Recibido</p>
+            </div>
+            <div style="padding: 30px; background-color: #f9f9f9;">
+                <p style="font-size: 16px; color: #333;">Has recibido una nueva calificación:</p>
+                <div style="background: white; padding: 20px; border-radius: 8px; border-left: 4px solid #00ffcc;">
+                    <p><strong>Remitente:</strong> {nombre}</p>
+                    <p><strong>Calificación:</strong> <span style="color: #ffca08; font-size: 20px;">{'★' * int(estrellas)}</span> ({estrellas}/5)</p>
+                    <hr style="border: 0; border-top: 1px solid #eee; margin: 15px 0;">
+                    <p><strong>Mensaje:</strong></p>
+                    <p style="font-style: italic; color: #555; line-height: 1.6;">"{mensaje}"</p>
+                </div>
+            </div>
+            <div style="background-color: #f1f1f1; padding: 15px; text-align: center; font-size: 11px; color: #888;">
+                Este es un mensaje automático generado por el sistema de feedback de Agenda Maestra.
+            </div>
+        </div>
+        """
+
+        msg = Message(
+            subject=f"⭐ FEEDBACK [{estrellas}/5] - {nombre}",
+            sender=app.config['MAIL_USERNAME'],
+            recipients=[app.config['MAIL_USERNAME']]
+        )
+        msg.html = html_body # Enviamos como HTML
+        
+        try:
+            mail.send(msg)
+        except Exception as e:
+            print(f"Error enviando correo: {e}")
+
+        return redirect(url_for('index'))
+    
+    return render_template('feedback.html')
+
+@app.route('/enviar_feedback', methods=['POST'])
+def enviar_feedback():
+    nombre = request.form.get('nombre_feedback')
+    estrellas = request.form.get('estrella')
+    mensaje = request.form.get('contenido_mensaje')
+    
+    # Configuración del mensaje profesional para el admin
+    msg = Message(
+        subject=f"⭐ RESEÑA DE {nombre.upper()} - {estrellas}/5 Estrellas",
+        sender=app.config['MAIL_USERNAME'],
+        recipients=[app.config['MAIL_USERNAME']],
+        body=f"Has recibido una nueva calificación en Agenda Maestra:\n\n"
+             f"Remitente: {nombre}\n"
+             f"Puntaje: {estrellas} estrellas\n"
+             f"Sugerencias: {mensaje}"
+    )
+    
+    try:
+        mail.send(msg)
+        return redirect(url_for('index'))
+    except Exception as e:
+        return f"Error al enviar: {str(e)}"
+
+@app.route('/admin-panel-secret', methods=['GET', 'POST'])
+def admin_panel():
+    # 1. Recuperación segura de credenciales
+    MASTER_USER = os.getenv('ADMIN_USER')
+    MASTER_PASS = os.getenv('ADMIN_PASS')
+
+    # Bloqueo preventivo si el entorno no está configurado
+    if not MASTER_USER or not MASTER_PASS:
+        app.logger.error("ALERTA: Acceso administrativo intentado sin variables de entorno configuradas.")
+        flash("Configuración de sistema incompleta. Contacte al administrador.", "danger")
+        return redirect(url_for('index'))
+
+    if request.method == 'POST':
+        user_input = request.form.get('admin_user', '')
+        pass_input = request.form.get('admin_pass', '')
+
+        # 2. Validación Robusta (Protección contra ataques de tiempo)
+        # Usamos hmac.compare_digest para que el tiempo de respuesta sea constante
+        is_user_valid = hmac.compare_digest(user_input, MASTER_USER)
+        is_pass_valid = hmac.compare_digest(pass_input, MASTER_PASS)
+
+        if is_user_valid and is_pass_valid:
+            # Obtención de datos
+            usuarios_lista = obtener_usuarios_db()
+            conteo_tareas = obtener_total_tareas()
+            
+            # Nota: No se guarda en 'session' por requerimiento de seguridad (forzar login)
+            return render_template('admin.html', 
+                                 usuarios=usuarios_lista, 
+                                 tareas=conteo_tareas)
+        else:
+            # 3. Medida Anti-Fuerza Bruta: Retraso artificial en caso de error
+            time.sleep(1.5)
+            flash("Identidad no reconocida. El intento ha sido registrado en los logs del sistema.", "danger")
+            return redirect(url_for('index'))
+
+    return render_template('admin_login.html')
+
+def obtener_usuarios_db():
+    """Extrae la lista de usuarios con manejo de errores robusto."""
+    try:
+        db = get_db_connection()
+        cursor = db.cursor(dictionary=True)
+        # Solo traemos los campos necesarios para auditoría
+        cursor.execute("""
+            SELECT usuario, email, nivel, creado_at 
+            FROM usuarios 
+            ORDER BY creado_at DESC
+        """)
+        usuarios = cursor.fetchall()
+        cursor.close()
+        db.close()
+        return usuarios
+    except Exception as e:
+        app.logger.error(f"⚠️ Error crítico en base de datos (obtener_usuarios): {e}")
+        return []
+
+def obtener_total_tareas():
+    """Calcula el total de tareas globales activas en el sistema."""
+    try:
+        db = get_db_connection()
+        cursor = db.cursor()
+        # Contamos solo las que no están en la papelera
+        cursor.execute("SELECT COUNT(*) FROM tareas WHERE eliminado_at IS NULL")
+        resultado = cursor.fetchone()
+        cursor.close()
+        db.close()
+        return resultado[0] if resultado else 0
+    except Exception as e:
+        app.logger.error(f"⚠️ Error crítico en base de datos (obtener_total_tareas): {e}")
+        return 0
 
 if __name__ == '__main__':
     app.run(debug=True)

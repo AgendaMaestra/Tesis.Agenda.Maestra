@@ -1,35 +1,95 @@
 function analizarPrioridades() {
     const content = document.getElementById('ai-content');
-    const scanner = document.querySelector('.scanner-line');
-    
-    // Mostramos el escáner
-    if(scanner) scanner.style.display = 'block';
-    content.innerHTML = '<div class="loading-text">Analizando tu carga académica...</div>';
+    const scanner = document.querySelector('.ai-scanner-bar, .scanner-line');
 
-    // Simulamos un retraso de "procesamiento" para realismo
+    if (scanner) scanner.style.display = 'block';
+    content.innerHTML = '<div class="loading-text">Buscando tareas...</div>';
+
     setTimeout(() => {
-        if(scanner) scanner.style.display = 'none';
-        
-        const tareas = document.querySelectorAll('.tarea-card'); // Ajusta segun tu clase de tareas
+        if (scanner) scanner.style.display = 'none';
+
+        const tareas = Array.from(document.querySelectorAll('.tarea-card'));
         let countImportantes = 0;
-        
+        let totalTareas = tareas.length;
+        let completadas = 0;
+        const resumenTareas = [];
+
         tareas.forEach(t => {
-            if(t.innerHTML.includes('★')) countImportantes++;
+            const texto = t.innerText || '';
+            const urgente = texto.includes('★');
+            if (urgente) {
+                countImportantes++;
+            }
+
+            const statusIcon = t.querySelector('.status-icon');
+            const estado = statusIcon ? statusIcon.innerText.trim() : '⭕';
+            if (estado === '✅' || estado === '✓') {
+                completadas++;
+            }
+
+            const materia = t.querySelector('.materia-tag')?.innerText.trim() || '';
+            const tema = t.querySelector('.tema-title')?.innerText.trim() || '';
+            const fecha = t.querySelector('.meta-data')?.innerText.trim() || '';
+            resumenTareas.push({ tema, materia, fecha, estado, urgente });
         });
 
-        let consejo = countImportantes > 0 
-            ? `Detecto ${countImportantes} tareas críticas. Prioriza los puntos estrella para proteger tu racha.` 
-            : "No hay amenazas críticas hoy. ¡Buen momento para adelantar trabajo!";
+        const pendientes = Math.max(0, totalTareas - completadas);
+
+        let informe = '';
+        if (totalTareas === 0) {
+            informe = 'No hay tareas. Agrega una nueva para empezar.';
+        } else {
+            informe = `Tienes <strong>${totalTareas}</strong> tareas, <strong>${pendientes}</strong> pendientes y <strong>${completadas}</strong> completas. `;
+            if (countImportantes > 0) {
+                informe += `Hay <strong>${countImportantes}</strong> tareas con ★. Atiende esas antes.`;
+            } else {
+                informe += 'No hay prioridades altas. Avanza con las tareas pendientes.';
+            }
+        }
+
+        const tareasOrdenadas = resumenTareas.sort((a, b) => (b.urgente ? 1 : 0) - (a.urgente ? 1 : 0));
+        let detalleHTML = '';
+        if (tareasOrdenadas.length > 0) {
+            const visibles = tareasOrdenadas.slice(0, 3);
+            detalleHTML = '<div style="margin-top: 12px; display: flex; flex-direction: column; gap: 8px; text-align: left;">';
+            visibles.forEach(item => {
+                const icono = item.urgente ? '🔴' : '⚪';
+                detalleHTML += `
+                    <div style="background: rgba(255,255,255,0.05); padding: 10px 12px; border-radius: 10px; border-left: 3px solid rgba(56, 189, 248, 0.4); display: flex; align-items: flex-start; gap: 10px;">
+                        <span style="font-size: 1.2rem; flex-shrink: 0;">${icono}</span>
+                        <div style="min-width: 0; flex: 1;">
+                            <div style="font-size: 0.9rem; font-weight: 600; color: #fff; word-break: break-word;">${item.tema || 'Sin título'}</div>
+                            <div style="margin-top: 4px; font-size: 0.75rem; color: rgba(255,255,255,0.6); line-height: 1.3;">
+                                ${item.materia ? `${item.materia} · ` : ''}${item.fecha || ''}
+                            </div>
+                        </div>
+                        <span style="font-size: 0.9rem; flex-shrink: 0; margin-top: 2px;">${item.estado}</span>
+                    </div>`;
+            });
+            detalleHTML += '</div>';
+        }
+
+        const extraTexto = totalTareas > 3 ? `<p style="margin-top: 10px; font-size: 0.75rem; color: rgba(255,255,255,0.5);">+${totalTareas - 3} más</p>` : '';
 
         content.innerHTML = `
-            <div style="animation: fadeIn 0.5s ease;">
-                <h4 style="color: var(--accent); margin-bottom:10px;">Análisis de Sistema</h4>
-                <p style="font-size: 0.9rem; line-height: 1.4; opacity: 0.9;">${consejo}</p>
-                <hr style="border: 0; border-top: 1px solid var(--glass-border); margin: 15px 0;">
-                <small style="opacity: 0.6;">Estado: Operativo v2.0</small>
+            <div style="animation: fadeIn 0.5s ease; padding: 12px 10px;">
+                <div style="margin-bottom: 10px;">
+                    <h4 style="color: var(--accent); margin: 0 0 6px 0; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">Estado</h4>
+                    <p style="margin: 0; font-size: 0.82rem; line-height: 1.4; color: rgba(255,255,255,0.85);">${informe}</p>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; margin-bottom: 12px;">
+                    <div style="background: rgba(56, 189, 248, 0.1); padding: 8px 10px; border-radius: 10px; color: #a8d8ff; font-size: 0.75rem; border: 1px solid rgba(56, 189, 248, 0.15); text-align: center;">
+                        Total<br><strong style="font-size: 0.95rem;">${totalTareas}</strong>
+                    </div>
+                    <div style="background: rgba(255, 71, 87, 0.1); padding: 8px 10px; border-radius: 10px; color: #ffa8b8; font-size: 0.75rem; border: 1px solid rgba(255, 71, 87, 0.15); text-align: center;">
+                        Pendientes<br><strong style="font-size: 0.95rem;">${pendientes}</strong>
+                    </div>
+                </div>
+                ${detalleHTML}
+                ${extraTexto}
             </div>
         `;
-    }, 1200);
+    }, 700);
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -130,39 +190,11 @@ function toggleHelp() {
     }
 }
 
-document.addEventListener('mousedown', (event) => {
-    const helpContainer = document.getElementById('help-container');
-    const helpModal = document.getElementById('help-modal');
-    
-    if (helpModal && helpModal.style.display === 'block') {
-        if (!helpContainer.contains(event.target)) {
-            helpModal.style.display = 'none';
-        }
-    }
-});
-
-const nuevaAyuda = `
-    <div class="help-step">
-        <strong>🧹 Vaciar Papelera:</strong> Dentro de la papelera, aparecerá un botón rojo para borrar todo definitivamente.
-    </div>
-`;
-
-function toggleHelp() {
-    const modal = document.getElementById('help-modal');
-    const isVisible = modal.style.display === 'block';
-    
-    // Cerramos el panel de la IA si abrimos la ayuda para no saturar la pantalla
-    const aiPanel = document.getElementById('ai-panel');
-    if (!isVisible && aiPanel) aiPanel.style.display = 'none';
-
-    modal.style.display = isVisible ? 'none' : 'block';
-}
-
 // Cerrar al hacer clic fuera del contenedor
 document.addEventListener('click', function(event) {
-    const container = document.getElementById('help-container');
+    const container = document.getElementById('help-container-root');
     const modal = document.getElementById('help-modal');
-    if (!container.contains(event.target)) {
+    if (modal && modal.style.display === 'block' && container && !container.contains(event.target)) {
         modal.style.display = 'none';
     }
 });

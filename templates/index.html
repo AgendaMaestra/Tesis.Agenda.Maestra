@@ -15,20 +15,22 @@
             </div> 
             
             <div class="dropdown-more" id="container-mas-opciones">
-                <button class="dropdown-btn" onclick="toggleMenuMasOpciones()">Más opciones ▾</button>
-                <div class="dropdown-content" id="menu-mas-opciones">
-                    <a href="{{ url_for('calendario') }}">Calendario</a>
-                    <a href="{{ url_for('estadisticas') }}">Estadísticas</a>
-                    <a href="{{ url_for('perfil') }}">Perfil</a>
-                    <a href="{{ url_for('logros') }}">Logros</a>
-                    <a href="{{ url_for('backup') }}">Respaldo SQL</a>
-                    <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin: 5px 0;">
-                    <a href="{{ url_for('logout') }}" style="color: #ff4747;">Cerrar Sesión</a>
-                </div>
-            </div>
-        </div> 
+    <button class="dropdown-btn" onclick="toggleMenuMasOpciones()">Más opciones ▾</button>
+    <div class="dropdown-content" id="menu-mas-opciones">
+        <a href="{{ url_for('calendario') }}">Calendario</a>
+        <a href="{{ url_for('estadisticas') }}">Estadísticas</a>
+        <a href="{{ url_for('perfil') }}">Perfil</a>
+        <a href="{{ url_for('logros') }}">Logros</a>
+        <a href="{{ url_for('backup') }}">Respaldo SQL</a>
+        <!-- NUEVA OPCIÓN -->
+        <a href="{{ url_for('feedback') }}">Enviar Comentarios</a>
+        
+        <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin: 5px 0;">
+        <a href="{{ url_for('logout') }}" style="color: #ff4747;">Cerrar Sesión</a>
+    </div>
+</div>
 
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px;"> 
+        <div class="action-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px;"> 
             <a href="{{ url_for('crear') }}" class="btn-main-solid" style="text-decoration:none; text-align: center;">
                 + NUEVO ELEMENTO
             </a>
@@ -102,7 +104,7 @@
                             <div class="meta-data">
                                 <span>📅 {{ tarea.fecha }}</span>
                                 {% if tarea.importante == 1 %} 
-                                    <span class="priority-badge">★ Prioridad</span> 
+                                    <span class="priority-badge">★ Alta</span> 
                                 {% endif %}
                             </div>
                         </div>
@@ -142,8 +144,12 @@
                 </div>
             {% endif %}
         </div>
-    </div> 
-    <div id="ai-assistant-container" class="ai-float-wrapper">
+    </div>
+</div>
+</div>
+</div>
+
+<div id="ai-assistant-container" class="ai-float-wrapper">
     <button class="ai-main-btn" onclick="toggleAssistant(); analizarPrioridades();">
         <div class="robot-container">
             {% set nivel = ((user_xp | default(0)) // 500) + 1 %}
@@ -165,7 +171,8 @@
         </div>
         <div class="ai-body">
             <div class="ai-scanner-bar"></div>
-            <div class="glitch-text">ANALIZANDO PRIORIDADES...</div>
+            <div class="glitch-text">Revisando tareas...</div>
+            <div id="ai-content"></div>
         </div>
     </div>
 </div>
@@ -182,40 +189,26 @@
         </div>
         <div class="help-body">
             <div class="help-step">
-                <strong><i class="fas fa-tasks"></i> Gestión de Tareas</strong>
-                <p>Usa "Nuevo Elemento" para organizar materias. Las estrellas ★ dan <b>multiplicador x1.5</b>.</p>
+                <strong><i class="fas fa-tasks"></i> Organiza rápido</strong>
+                <p>Agrega tareas y marca con ★ las que sean urgentes.</p>
             </div>
             <div class="help-step">
-                <strong><i class="fas fa-history"></i> Recuperación (48h)</strong>
-                <p>Los elementos borrados viven 2 días en la papelera antes de desaparecer.</p>
+                <strong><i class="fas fa-history"></i> Recuperación 48h</strong>
+                <p>Las tareas borradas se pueden restaurar en 48 horas.</p>
             </div>
             <div class="help-step">
-                <strong><i class="fas fa-fire"></i> Sistema de Rachas</strong>
-                <p>Mantén tu fuego activo completando tareas diario. ¡No dejes que vuelva a 0!</p>
+                <strong><i class="fas fa-fire"></i> Rachas activas</strong>
+                <p>Cumple tareas cada día para mantener tu impulso.</p>
             </div>
             <div class="help-step">
-                <strong><i class="fas fa-robot"></i> Asistente Estratégico</strong>
-                <p>El robot analiza tus fechas y prioriza tu día automáticamente.</p>
+                <strong><i class="fas fa-robot"></i> Asistente rápido</strong>
+                <p>Revisa prioridades y sugiere qué hacer primero.</p>
             </div>            
             <a href="{{ url_for('logros') }}" class="btn-help-link">Ver mis logros</a>
         </div>
     </div>
 </div>
-        </div>
-    </div>
-</div>
-</div>
 <script>
-
-function toggleAssistant() {
-    const panel = document.getElementById('ai-panel');
-    panel.style.display = (panel.style.display === 'none' || panel.style.display === '') ? 'block' : 'none';
-}
-
-function toggleHelp() {
-    const modal = document.getElementById('help-modal');
-    modal.style.display = (modal.style.display === 'none' || modal.style.display === '') ? 'block' : 'none';
-}
 
 function toggleEnfoque() {
     const body = document.body;
@@ -680,133 +673,215 @@ function toggleEnfoque() {
     }
 
     /* --- OPTIMIZACIÓN FINAL: FILTROS, ENFOQUE Y PAPELERA --- */
-
-/* 1. Cabecera y Título */
-.glass-card > div:first-child {
-    display: flex !important;
-    justify-content: space-between !important;
-    align-items: center !important;
-    flex-wrap: wrap !important;
-    gap: 15px !important;
-    margin-bottom: 20px !important;
-}
-
-/* 2. Alerta de Entrega (Gradiente Seguro) */
-.alerta-entrega {
-    display: flex !important;
-    align-items: center !important;
-    gap: 12px !important;
-    background: rgba(255, 255, 255, 0.05) !important;
-    padding: 12px 15px !important;
-    border-radius: 15px !important;
-    margin-bottom: 20px !important;
-}
-
-.alerta-entrega i, .alerta-text b {
-    background: linear-gradient(135deg, #ffd700, #00ff88) !important;
-    -webkit-background-clip: text !important;
-    background-clip: text !important;
-    -webkit-text-fill-color: transparent !important;
-}
-
-/* 3. Botones de Acción Principales */
-.action-grid {
-    display: grid !important;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)) !important;
-    gap: 10px !important;
-    margin-bottom: 20px !important;
-}
-
-/* 4. FILTROS: Asegura que no se corten y tengan scroll */
-/* --- OPTIMIZACIÓN DE FLUJO Y RESPONSIVIDAD TOTAL --- */
-
-/* 1. Contenedor principal: Evita que la tarjeta toque los bordes del celular */
-.main-wrapper {
-    padding: 10px !important;
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: center !important;
-}
-
-.glass-card {
-    width: 100% !important;
-    max-width: 600px !important; /* Mantiene un ancho elegante */
-    padding: 20px 15px !important;
-    box-sizing: border-box !important;
-}
-
-/* 2. Cabecera flexible: Si el título y el botón no caben, el botón baja */
-.glass-card > div:first-child {
-    display: flex !important;
-    flex-wrap: wrap !important; /* ESTO HACE QUE BAJEN SI NO CABEN */
-    justify-content: space-between !important;
-    align-items: center !important;
-    gap: 15px !important;
-    margin-bottom: 25px !important;
-}
-
-/* 3. Botones de Acción: Se ajustan solos al ancho disponible */
-.action-grid {
-    display: flex !important;
-    flex-wrap: wrap !important;
-    gap: 10px !important;
-    width: 100% !important;
-}
-
-.action-grid > a, .action-grid > button {
-    flex: 1 1 140px !important; /* Se estiran y bajan automáticamente */
-    min-width: 130px !important;
-}
-
-/* 4. Filtros y Controles Extra (Enfoque/Papelera) */
-.filter-scroll-container {
-    width: 100% !important;
-    display: flex !important;
-    gap: 8px !important;
-    overflow-x: auto !important;
-    padding-bottom: 10px !important;
-}
-
-/* Fila de Enfoque/Papelera: Si la pantalla es muy chica, se ponen uno arriba del otro */
-div:has(> a[href*="enfoque"]), 
-div:has(> a[href*="papelera"]) {
-    display: flex !important;
-    flex-wrap: wrap !important; 
-    justify-content: space-between !important;
-    gap: 10px !important;
-    padding: 15px 5px !important;
-}
-
-/* 5. Tarjetas de Tarea: No se rompen, el texto baja si es largo */
-.tarea-card {
-    display: grid !important;
-    grid-template-columns: 40px 1fr auto !important;
-    gap: 12px !important;
-    padding: 15px !important;
-    align-items: center !important;
-    width: 100% !important;
-    box-sizing: border-box !important;
-}
-
-.tema-title {
-    font-size: 0.95rem !important;
-    white-space: normal !important; /* Permite saltos de línea */
-    word-break: break-word !important; 
-}
-
-/* 6. Ajustes específicos para pantallas muy pequeñas */
-@media (max-width: 400px) {
-    .main-title {
-        font-size: 1.2rem !important;
+    .main-wrapper {
+        padding: 18px 16px 28px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-height: calc(100vh - 40px);
     }
+
+    .glass-card {
+        width: 100%;
+        max-width: 760px;
+        padding: 24px 20px;
+        box-sizing: border-box;
+        margin: 0 auto;
+    }
+
+    .glass-card > div:first-child {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 16px;
+        margin-bottom: 22px;
+    }
+
+    .action-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(140px, 1fr));
+        gap: 12px;
+        margin-bottom: 20px;
+    }
+
+    .action-grid > a,
+    .action-grid > button {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .filter-scroll-container {
+        width: 100%;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+        overflow-x: auto;
+        padding-bottom: 10px;
+        margin-bottom: 18px;
+    }
+
+    .filter-scroll-container > * {
+        flex: 1 1 auto;
+        min-width: 120px;
+    }
+
     .nav-filter-btn {
-        padding: 8px 12px !important;
-        font-size: 0.75rem !important;
+        white-space: nowrap;
     }
-    a[href*="enfoque"], a[href*="papelera"] {
-        font-size: 0.7rem !important;
+
+    .trash-link {
+        margin-left: auto;
     }
-}
+
+    .tarea-card {
+        display: grid;
+        grid-template-columns: 40px minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 12px;
+        padding: 16px 18px;
+        width: 100%;
+        box-sizing: border-box;
+        border-radius: 18px;
+    }
+
+    .card-options-zone {
+        display: flex;
+        flex-direction: row;
+        gap: 8px;
+        align-items: center;
+        justify-content: flex-end;
+        padding-left: 10px;
+        border-left: 1px solid var(--border-glass);
+    }
+
+    .card-info-zone {
+        min-width: 0;
+    }
+
+    .tema-title {
+        font-size: 1rem;
+        white-space: normal;
+        word-break: break-word;
+    }
+
+    .meta-data {
+        font-size: 0.75rem;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .help-container-wrapper {
+        position: fixed;
+        bottom: 20px;
+        left: 20px;
+        z-index: 10000;
+    }
+
+    .help-card {
+        width: 300px;
+        max-width: 85vw;
+    }
+
+    .ai-float-wrapper {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 10000;
+    }
+
+    .ai-glass-panel {
+        width: 320px;
+        max-width: 90vw;
+        right: 0;
+    }
+
+    @media (max-width: 768px) {
+        .glass-card {
+            padding: 18px 14px;
+        }
+
+        .glass-card > div:first-child {
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+
+        .action-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .filter-scroll-container {
+            gap: 8px;
+            justify-content: flex-start;
+        }
+
+        .filter-scroll-container > * {
+            min-width: 100px;
+        }
+
+        .tarea-card {
+            grid-template-columns: 40px 1fr;
+            padding: 14px 16px;
+        }
+
+        .card-options-zone {
+            width: 100%;
+            border-left: none;
+            border-top: 1px solid var(--border-glass);
+            padding-left: 0;
+            padding-top: 10px;
+            margin-top: 10px;
+            justify-content: flex-start;
+        }
+
+        .tarea-card > .card-action-zone:first-child {
+            margin-right: 0;
+        }
+
+        .ai-glass-panel {
+            width: calc(100vw - 32px);
+            right: 10px;
+        }
+
+        .help-card {
+            left: 10px;
+            width: calc(100vw - 32px);
+        }
+    }
+
+    @media (max-width: 480px) {
+        .main-title {
+            font-size: 1.25rem;
+        }
+
+        .btn-main-solid,
+        .btn-main-secondary,
+        .nav-filter-btn {
+            padding: 11px 14px;
+            font-size: 0.8rem;
+        }
+
+        .filter-scroll-container {
+            padding-bottom: 8px;
+        }
+
+        .help-container-wrapper,
+        .ai-float-wrapper {
+            bottom: 12px;
+        }
+
+        .ai-glass-panel {
+            width: calc(100vw - 24px);
+            right: 10px;
+        }
+
+        .help-card {
+            width: calc(100vw - 24px);
+            left: 10px;
+        }
+    }
 
 /* --- FIX DE ORDENAMIENTO Y FLUJO RESPONSIVO --- */
 
@@ -865,7 +940,7 @@ div:has(> a[href*="papelera"]) {
 
 .tema-title {
     font-size: 0.95rem !important;
-    white-space: normal !important; /* El texto baja a la siguiente línea si es largo */
+    white-space: normal !important; /* Permite saltos de línea */
     word-break: break-word !important;
 }
 
@@ -1312,5 +1387,118 @@ div:has(> a[href*="papelera"]) {
     left: 0 !important;
     width: 300px !important;
 }
+
+    /* Ajustes finales para distribución y proporción */
+    .main-wrapper {
+        align-items: center !important;
+    }
+
+    .glass-card {
+        max-width: 700px !important;
+        padding: 20px 18px !important;
+        margin: 0 auto !important;
+    }
+
+    .contenedor-tareas-master {
+        max-width: 100% !important;
+        width: 100% !important;
+    }
+
+    .tarea-card {
+        padding: 14px 16px !important;
+        max-width: 100% !important;
+        min-height: 0 !important;
+    }
+
+    .help-trigger {
+        width: 46px !important;
+        height: 46px !important;
+        font-size: 1.25rem !important;
+    }
+
+    .ai-main-btn {
+        width: 50px !important;
+        height: 50px !important;
+        padding: 0 !important;
+        border-radius: 18px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        box-sizing: border-box !important;
+    }
+
+    .robot-container {
+        width: 100% !important;
+        height: 100% !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        position: relative !important;
+        box-sizing: border-box !important;
+    }
+
+    .robot-icon {
+        font-size: 1.4rem !important;
+        line-height: 1 !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+
+    .lvl-tag {
+        bottom: -4px !important;
+        padding: 2px 6px !important;
+        font-size: 0.62rem !important;
+    }
+
+    #ai-assistant-container {
+        right: 18px !important;
+        bottom: 18px !important;
+    }
+
+    #help-container-root {
+        left: 18px !important;
+        bottom: 18px !important;
+    }
+
+    .ai-glass-panel {
+        width: 300px !important;
+        max-width: calc(100vw - 36px) !important;
+    }
+
+    .help-card {
+        width: 280px !important;
+        max-width: calc(100vw - 36px) !important;
+    }
+
+    @media (max-width: 740px) {
+        .glass-card {
+            max-width: 100% !important;
+            padding: 18px 14px !important;
+        }
+
+        .ai-main-btn, .help-trigger {
+            width: 46px !important;
+            height: 46px !important;
+        }
+
+        .ai-glass-panel,
+        .help-card {
+            width: calc(100vw - 28px) !important;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .ai-main-btn, .help-trigger {
+            width: 44px !important;
+            height: 44px !important;
+        }
+
+        .help-card,
+        .ai-glass-panel {
+            width: calc(100vw - 24px) !important;
+        }
+    }
 </style>
+
 {% endblock %}
