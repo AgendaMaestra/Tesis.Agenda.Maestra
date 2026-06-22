@@ -1,7 +1,8 @@
 {% extends 'layout.html' %}
 {% block content %}
 <div class="main-wrapper admin-auth-wrapper">
-    <div class="glass-card terminal-card">
+    <div class="glass-card terminal-card" style="animation: terminalEntry 0.6s cubic-bezier(0.23, 1, 0.32, 1);">
+        <!-- Badge de seguridad mejorado -->
         <div class="security-badge">
             <span class="pulse-icon"></span>
             RESTRICTED ACCESS
@@ -10,72 +11,125 @@
         <h2 class="terminal-title">TERMINAL DE SISTEMA</h2>
         <p class="terminal-subtitle">Autenticación de Nivel 0 Requerida</p>
         
+        <!-- Alertas de Sistema -->
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
-                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                    <div class="alert alert-{{ category }}" style="animation: alertIn 0.3s ease;">
+                        <span style="margin-right: 5px;">[!]</span> {{ message }}
+                    </div>
                 {% endfor %}
             {% endif %}
         {% endwith %}
 
         <form method="POST" class="admin-form">
+            <!-- Usuario Maestro -->
             <div class="input-container">
                 <label for="admin_user">IDENTIFICADOR</label>
-                <input type="text" name="admin_user" id="admin_user" placeholder="Usuario Maestro" required autocomplete="off">
+                <input type="text" name="admin_user" id="admin_user" placeholder="Usuario Maestro" required autocomplete="off" autofocus>
             </div>
 
-            <div class="input-container">
-                <label for="admin_pass">CÓDIGO DE ACCESO</label>
-                <input type="password" name="admin_pass" id="admin_pass" placeholder="••••••••" required>
-            </div>
-
-            <button type="submit" class="btn-terminal">
-                <span class="btn-text">DESBLOQUEAR PANEL</span>
-                <span class="btn-glitch"></span>
-            </button>
-        </form>
+            <!-- Código de Acceso con Toggle de visibilidad -->
+            <!-- Código de Acceso con Toggle de visibilidad CORREGIDO -->
+<div class="input-container">
+    <label for="admin_pass">CÓDIGO DE ACCESO</label>
+    <div class="password-wrapper" style="position: relative; width: 100%; display: flex; align-items: center;">
+        <input type="password" name="admin_pass" id="admin_pass" placeholder="••••••••" required 
+               style="width: 100%; padding: 14px; padding-right: 45px; background: rgba(0, 0, 0, 0.4); border: 1px solid rgba(255, 71, 87, 0.1); color: #fff; border-radius: 12px; outline: none; font-family: 'Courier New', monospace;">
+        
+        <button type="button" onclick="toggleAdminPass()" 
+                style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--error); opacity: 0.7; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 10; padding: 0;">
+            <svg id="eye_icon" xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="currentColor" viewBox="0 0 16 16">
+                <path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5c-2.12 0-3.879-1.168-5.168-2.457A13.134 13.134 0 0 1 1.172 8z"/>
+                <path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z"/>
+            </svg>
+        </button>
     </div>
 </div>
 
+            <!-- Botón con efecto Glitch -->
+            <button type="submit" class="btn-terminal">
+                <span class="btn-text">DESBLOQUEAR PANEL</span>
+            </button>
+        </form>
+
+        <div style="margin-top: 25px; opacity: 0.3; font-size: 0.6rem; letter-spacing: 2px;">
+            SYS_ADMIN_v2.0_ENCRYPTED
+        </div>
+    </div>
+</div>
+
+<script>
+    // Función para mostrar/ocultar contraseña del Admin
+    function toggleAdminPass() {
+        const passInput = document.getElementById('admin_pass');
+        const eyeIcon = document.getElementById('eye_icon');
+        
+        if (passInput.type === 'password') {
+            passInput.type = 'text';
+            // Cambiar a ojo con barra (ocultar)
+            eyeIcon.innerHTML = '<path d="M13.359 11.238C15.06 9.72 16 8 16 8s-3-5.5-8-5.5a7.028 7.028 0 0 0-2.79.588l.77.771A5.944 5.944 0 0 1 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.134 13.134 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755-.165.165-.337.328-.517.486l.708.709z"/><path d="M11.297 9.176a3.5 3.5 0 0 0-4.474-4.474l.823.823a2.5 2.5 0 0 1 2.828 2.829l.823.822zm-4.12 1.91l-1.283-1.283A11.347 11.347 0 0 1 1.172 8c.056-.086.12-.18.192-.284C1.7 7.238 2.196 6.6 2.831 5.966c.21-.21.432-.415.666-.604l-.708-.708A12.63 12.63 0 0 0 1.173 8s3 5.5 8 5.5a7.028 7.028 0 0 0 2.79-.588l-.77-.771A5.944 5.944 0 0 1 8 12.5c-2.12 0-3.879-1.168-5.168-2.457A13.134 13.134 0 0 1 1.172 8z"/><path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z"/><path d="M1 1l14 14"/>';
+        } else {
+            passInput.type = 'password';
+            // Volver a ojo normal
+            eyeIcon.innerHTML = '<path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5c-2.12 0-3.879-1.168-5.168-2.457A13.134 13.134 0 0 1 1.172 8z"/><path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z"/>';
+        }
+    }
+</script>
+
 <style>
+    /* Animación de entrada estilo terminal */
+    @keyframes terminalEntry {
+        from { opacity: 0; transform: scale(0.95); filter: blur(10px); }
+        to { opacity: 1; transform: scale(1); filter: blur(0); }
+    }
+
+    @keyframes alertIn {
+        from { opacity: 0; transform: translateX(-10px); }
+        to { opacity: 1; transform: translateX(0); }
+    }
+
     .admin-auth-wrapper {
         display: flex;
         align-items: center;
         justify-content: center;
         min-height: 85vh;
-        background: radial-gradient(circle at center, rgba(255, 71, 87, 0.05) 0%, transparent 70%);
+        background: radial-gradient(circle at center, rgba(255, 71, 87, 0.08) 0%, transparent 75%);
     }
 
     .terminal-card {
         max-width: 400px;
         width: 100%;
         padding: 40px;
-        border: 1px solid rgba(255, 71, 87, 0.2) !important;
-        box-shadow: 0 0 30px rgba(255, 71, 87, 0.1);
+        border: 1px solid rgba(255, 71, 87, 0.3) !important;
+        box-shadow: 0 0 40px rgba(255, 71, 87, 0.15);
         position: relative;
         overflow: hidden;
+        backdrop-filter: blur(15px);
     }
 
     .security-badge {
         display: inline-flex;
         align-items: center;
         gap: 8px;
-        background: rgba(255, 71, 87, 0.1);
+        background: rgba(255, 71, 87, 0.15);
         color: var(--error);
         font-size: 0.65rem;
         font-weight: 800;
-        padding: 5px 12px;
+        padding: 6px 14px;
         border-radius: 50px;
         margin-bottom: 20px;
-        letter-spacing: 1px;
+        letter-spacing: 1.5px;
+        border: 1px solid rgba(255, 71, 87, 0.2);
     }
 
     .pulse-icon {
-        width: 6px;
-        height: 6px;
+        width: 7px;
+        height: 7px;
         background: var(--error);
         border-radius: 50%;
         animation: pulse 1.5s infinite;
+        box-shadow: 0 0 8px var(--error);
     }
 
     .terminal-title {
@@ -83,14 +137,15 @@
         font-weight: 900;
         letter-spacing: -1px;
         margin-bottom: 5px;
+        text-shadow: 0 0 10px rgba(255, 71, 87, 0.3);
     }
 
     .terminal-subtitle {
         opacity: 0.5;
-        font-size: 0.85rem;
+        font-size: 0.8rem;
         margin-bottom: 30px;
         text-transform: uppercase;
-        letter-spacing: 1px;
+        letter-spacing: 2px;
     }
 
     .admin-form {
@@ -107,27 +162,28 @@
         display: block;
         font-size: 0.65rem;
         font-weight: 800;
-        opacity: 0.4;
+        opacity: 0.5;
         margin-bottom: 8px;
         margin-left: 5px;
+        letter-spacing: 1px;
     }
 
     .input-container input {
         width: 100%;
         padding: 14px;
-        background: rgba(0, 0, 0, 0.3);
-        border: 1px solid var(--glass-border);
+        background: rgba(0, 0, 0, 0.4);
+        border: 1px solid rgba(255, 71, 87, 0.1);
         color: #fff;
         border-radius: 12px;
         outline: none;
         transition: all 0.3s;
-        font-family: monospace;
+        font-family: 'Courier New', Courier, monospace;
     }
 
     .input-container input:focus {
         border-color: var(--error);
-        background: rgba(255, 71, 87, 0.05);
-        box-shadow: 0 0 15px rgba(255, 71, 87, 0.1);
+        background: rgba(255, 71, 87, 0.08);
+        box-shadow: 0 0 15px rgba(255, 71, 87, 0.2);
     }
 
     .btn-terminal {
@@ -138,30 +194,36 @@
         border-radius: 12px;
         border: none;
         cursor: pointer;
-        transition: transform 0.2s, filter 0.2s;
+        transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         margin-top: 10px;
-        position: relative;
+        letter-spacing: 1px;
     }
 
     .btn-terminal:hover {
-        transform: scale(1.02);
-        filter: brightness(1.1);
+        transform: translateY(-2px);
+        box-shadow: 0 5px 20px rgba(255, 71, 87, 0.4);
+        filter: brightness(1.2);
+    }
+
+    .btn-terminal:active {
+        transform: scale(0.98);
     }
 
     .alert {
         padding: 12px;
-        border-radius: 8px;
+        border-radius: 10px;
         font-size: 0.8rem;
         margin-bottom: 20px;
-        font-weight: 600;
-        background: rgba(255, 71, 87, 0.1);
-        color: var(--error);
-        border: 1px solid rgba(255, 71, 87, 0.2);
+        font-weight: 700;
+        background: rgba(255, 71, 87, 0.15);
+        color: #ff9f9f;
+        border: 1px solid rgba(255, 71, 87, 0.3);
+        text-align: left;
     }
 
     @keyframes pulse {
         0% { transform: scale(1); opacity: 1; }
-        50% { transform: scale(1.5); opacity: 0.5; }
+        50% { transform: scale(1.6); opacity: 0.4; }
         100% { transform: scale(1); opacity: 1; }
     }
 </style>

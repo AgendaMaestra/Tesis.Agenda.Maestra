@@ -2,155 +2,145 @@
 {% block content %} 
 <div class="main-wrapper"> 
     <div class="glass-card"> 
+        
         <div style="display:flex; justify-content: space-between; align-items: center; margin-bottom: 25px;"> 
             <div> 
-                <h1 class="main-title" style="margin:0; font-size:1.6rem; letter-spacing: -0.5px;">AGENDA<span style="color:var(--accent)">MAESTRA</span></h1> 
+                <h1 class="main-title" style="margin:0; font-size:1.6rem; letter-spacing: -0.5px;">
+                    AGENDA<span style="color:var(--accent)">MAESTRA</span>
+                </h1> 
                 <p class="sub-title" style="margin:0; opacity:0.6; font-size:0.85rem; font-weight: 500;">
                     {% if ver_papelera == 1 %} 
-                        <span style="color: #ff4747;">Modo Papelera (Auto-vaciado en 2 días)</span>
+                        <span style="color: #ff4747; font-weight: bold;">MODO PAPELERA (Auto-vaciado en 48h)</span>
                     {% else %} 
-                        Organización inteligente para {{ usuario }} 
+                        <span id="user-greeting">Organización inteligente para <strong>{{ usuario }}</strong></span>
                     {% endif %}
                 </p> 
             </div> 
             
             <div class="dropdown-more" id="container-mas-opciones">
-    <button class="dropdown-btn" onclick="toggleMenuMasOpciones()">Más opciones ▾</button>
-    <div class="dropdown-content" id="menu-mas-opciones">
-        <a href="{{ url_for('calendario') }}">Calendario</a>
-        <a href="{{ url_for('estadisticas') }}">Estadísticas</a>
-        <a href="{{ url_for('perfil') }}">Perfil</a>
-        <a href="{{ url_for('logros') }}">Logros</a>
-        <a href="{{ url_for('backup') }}">Respaldo SQL</a>
-        <!-- NUEVA OPCIÓN -->
-        <a href="{{ url_for('feedback') }}">Enviar Comentarios</a>
-        
-        <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin: 5px 0;">
-        <a href="{{ url_for('logout') }}" style="color: #ff4747;">Cerrar Sesión</a>
-    </div>
-</div>
+                <button class="dropdown-btn" onclick="toggleMenuMasOpciones()" aria-haspopup="true" aria-expanded="false">
+                    Más opciones ▾
+                </button>
+                <div class="dropdown-content" id="menu-mas-opciones">
+                    <a href="{{ url_for('calendario') }}"><i class="fas fa-calendar-alt"></i> Calendario</a>
+                    <a href="{{ url_for('estadisticas') }}"><i class="fas fa-chart-line"></i> Estadísticas</a>
+                    <a href="{{ url_for('perfil') }}"><i class="fas fa-user-circle"></i> Perfil</a>
+                    <a href="{{ url_for('logros') }}"><i class="fas fa-medal"></i> Mis Logros</a>
+                    <a href="{{ url_for('feedback') }}"><i class="fas fa-comment-dots"></i>Comentarios</a>
+                    <hr style="border: 0; border-top: 1px solid rgba(255,255,255,0.1); margin: 5px 0;">
+                    <a href="{{ url_for('logout') }}" style="color: #ff4747; font-weight: bold;">
+                        <i class="fas fa-sign-out-alt"></i> Cerrar Sesión
+                    </a>
+                </div>
+            </div>
+        </div>
 
         <div class="action-grid" style="display:grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px;"> 
-            <a href="{{ url_for('crear') }}" class="btn-main-solid" style="text-decoration:none; text-align: center;">
-                + NUEVO ELEMENTO
+            <a href="{{ url_for('crear') }}" class="btn-main-solid" style="text-decoration:none; text-align: center; display: flex; align-items: center; justify-content: center;">
+                <span style="font-size: 1.2rem; margin-right: 8px;">+</span> NUEVO ELEMENTO
             </a>
             
             {% if ver_papelera == 1 %}
-                <a href="{{ url_for('index') }}" class="btn-main-solid" style="background: var(--accent); color: #0f172a; text-decoration:none; text-align: center;">
+                <a href="{{ url_for('index') }}" class="btn-main-solid" style="background: var(--accent); color: #0f172a; text-decoration:none; text-align: center; display: flex; align-items: center; justify-content: center;">
                     VOLVER A LA AGENDA
                 </a>
             {% else %}
                 {% if ver_hechas == 1 %}
-                    <a href="{{ url_for('index', ver_hechas=0) }}" class="btn-main-secondary" style="text-decoration:none; text-align: center;">VER PENDIENTES</a>
+                    <a href="{{ url_for('index', ver_hechas=0) }}" class="btn-main-secondary" style="text-decoration:none; text-align: center; display: flex; align-items: center; justify-content: center;">
+                        VER PENDIENTES
+                    </a>
                 {% else %}
-                    <a href="{{ url_for('index', ver_hechas=1) }}" class="btn-main-secondary" style="text-decoration:none; text-align: center;">VER COMPLETADAS</a>
+                    <a href="{{ url_for('index', ver_hechas=1) }}" class="btn-main-secondary" style="text-decoration:none; text-align: center; display: flex; align-items: center; justify-content: center;">
+                        VER COMPLETADAS
+                    </a>
                 {% endif %}
             {% endif %}
         </div>
 
-        <div class="filter-scroll-container" style="display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px; align-items: center;">
-    <a href="{{ url_for('index', ver_hechas=ver_hechas) }}" class="nav-filter-btn {{ 'active' if not request.args.get('tipo_filtro') and ver_papelera != 1 }}">Todo</a>
-    <a href="{{ url_for('index', tipo_filtro='tarea', ver_hechas=ver_hechas) }}" class="nav-filter-btn {{ 'active' if request.args.get('tipo_filtro') == 'tarea' }}">Tareas</a>
-    <a href="{{ url_for('index', tipo_filtro='examen', ver_hechas=ver_hechas) }}" class="nav-filter-btn {{ 'active' if request.args.get('tipo_filtro') == 'examen' }}">Exámenes</a>
+        <div class="filter-scroll-container" style="display: flex; gap: 10px; overflow-x: auto; padding-bottom: 10px; align-items: center; scrollbar-width: none;">
+            <a href="{{ url_for('index', ver_hechas=ver_hechas) }}" class="nav-filter-btn {{ 'active' if not request.args.get('tipo_filtro') and ver_papelera != 1 }}">Todo</a>
+            <a href="{{ url_for('index', tipo_filtro='tarea', ver_hechas=ver_hechas) }}" class="nav-filter-btn {{ 'active' if request.args.get('tipo_filtro') == 'tarea' }}">Tareas</a>
+            <a href="{{ url_for('index', tipo_filtro='examen', ver_hechas=ver_hechas) }}" class="nav-filter-btn {{ 'active' if request.args.get('tipo_filtro') == 'examen' }}">Exámenes</a>
 
-    {% if ver_papelera != 1 %}
-<button onclick="toggleEnfoque()" id="btn-enfoque" class="nav-filter-btn" 
-    style="background: rgba(56, 189, 248, 0.1); 
-           color: var(--accent); 
-           border: 1px solid var(--accent); 
-           cursor: pointer; 
-           white-space: nowrap; 
-           padding: 0 15px; 
-           height: 32px; 
-           display: flex; 
-           align-items: center; 
-           justify-content: center; 
-           flex-shrink: 0;">
-    Modo Enfoque
-</button>
+            {% if ver_papelera != 1 %}
+                <a href="{{ url_for('index', papelera=1) }}" class="nav-filter-btn trash-link" style="margin-left: auto; color: #ff4747; border-color: rgba(255, 71, 71, 0.3);">
+                    🗑️ Papelera
+                </a>
+            {% endif %}
+
+            {% if ver_papelera == 1 and tareas|length > 0 %}
+    <form action="{{ url_for('vaciar_papelera') }}" method="POST" style="display:inline;">
+        <button type="submit" 
+                class="btn-vaciar" 
+                style="cursor: pointer; border: none; white-space: nowrap; background: #ff4747; color: white; padding: 5px 15px; border-radius: 8px; font-size: 0.8rem; font-weight: bold;"
+                onclick="return confirm('¿ESTÁS SEGURO? Esta acción es IRREVERSIBLE y eliminará todas las tareas de la papelera permanentemente.')">
+            VACIAR PAPELERA
+        </button>
+    </form>
 {% endif %}
-
-    {% if ver_papelera != 1 %}
-        <a href="{{ url_for('index', papelera=1) }}" class="nav-filter-btn trash-link" style="margin-left: auto; color: #ff4747;">
-             Papelera
-        </a>
-    {% endif %}
-
-    {% if ver_papelera == 1 and tareas|length > 0 %}
-        <a href="{{ url_for('vaciar_papelera') }}" 
-           class="btn-vaciar" 
-           style="white-space: nowrap;"
-           onclick="return confirm('¿Estás seguro? Esta acción no se puede deshacer y eliminará todo permanentemente.')">
-           Vaciar papelera
-        </a>
-    {% endif %}
-</div>
-
-        <div class="contenedor-tareas-master">
-            {% if tareas %}
-                {% for tarea in tareas %}
-                    <div class="tarea-card {{ 'importante' if tarea.importante == 1 }} {{ 'tarea-extra' if loop.index > 3 }}" 
-                    style="--t-color: {{ tarea.color | safe }}; {{ 'display: none;' if loop.index > 3 and not request.args.get('ver_todo') }}">
-                        
-                        <div class="card-action-zone">
-                            <a href="{{ url_for('completar', id=tarea.id) }}" class="status-icon" style="text-decoration:none; font-size:1.2rem;">
-                                {{ '✅' if tarea.estado == 'hecha' else '⭕' }}
-                            </a>
-                        </div>
-
-                        <div class="card-info-zone">
-                            <span class="materia-tag" style="color: var(--t-color);">{{ tarea.materia }}</span>
-                            <h3 class="tema-title">{{ tarea.tema }}</h3>
-                            <div class="meta-data">
-                                <span>📅 {{ tarea.fecha }}</span>
-                                {% if tarea.importante == 1 %} 
-                                    <span class="priority-badge">★ Alta</span> 
-                                {% endif %}
-                            </div>
-                        </div>
-
-                        <div class="card-options-zone">
-    {% if ver_papelera == 1 %}
-        <a href="{{ url_for('restaurar', id=tarea.id) }}" 
-           title="Restaurar tarea" 
-           style="text-decoration:none; font-size: 1.2rem;">🔄</a>
-           
-        {# Opcional: Podrías añadir un botón de borrado individual permanente aquí si quisieras #}
-        
-    {% else %}
-        <a href="{{ url_for('editar', id=tarea.id) }}" 
-           class="icon-btn" 
-           title="Editar" 
-           style="text-decoration:none;">📝</a>
-           
-        <a href="{{ url_for('eliminar', id=tarea.id) }}" 
-           class="icon-btn" 
-           onclick="return confirm('¿Mover a la papelera? Se guardará por 2 días.')" 
-           title="Eliminar" 
-           style="text-decoration:none;">🗑️</a>
-    {% endif %}
-</div>
-                    </div>
-                {% endfor %}
-
-                {% if tareas|length > 3 %}
-                    <button id="btn-toggle-tareas" class="btn-main-secondary" style="width: 100%; margin-top: 10px;" onclick="toggleTareas()">
-                        Ver {{ tareas|length - 3 }} tareas más ▾
-                    </button>
-                {% endif %}
-            {% else %}
-                <div class="empty-state" style="text-align: center; padding: 40px 20px; opacity: 0.5;">
-                    <p>{% if ver_papelera == 1 %} La papelera está vacía. {% else %} No hay elementos por aquí. {% endif %} </p>
-                </div>
-            {% endif %}
         </div>
+
+        <div class="contenedor-tareas-master" id="contenedor-tareas">
+    {% if tareas %}
+        {% for tarea in tareas %}
+            <div class="tarea-card {{ 'importante' if tarea.importante == 1 }} {{ 'tarea-extra' if loop.index > 3 }}"
+                 style="--t-color: {{ tarea.color | safe }};"
+                 {% if loop.index > 3 and not request.args.get('ver_todo') %} data-oculta="true" style="--t-color: {{ tarea.color | safe }}; display: none;" {% endif %}>
+                
+                <div class="card-action-zone">
+                    <a href="{{ url_for('completar', id=tarea.id) }}" class="status-icon" style="text-decoration:none; font-size:1.2rem;" title="Marcar como completada">
+                        {{ '✅' if tarea.estado == 'hecha' else '⭕' }}
+                    </a>
+                </div>
+
+                <div class="card-info-zone">
+                    <span class="materia-tag" style="color: var(--t-color); font-weight: 800; font-size: 0.7rem; text-transform: uppercase;">
+                        {{ tarea.materia }}
+                    </span>
+                    <h3 class="tema-title" style="margin: 4px 0; font-size: 1.05rem;">{{ tarea.tema }}</h3>
+                    <div class="meta-data" style="display: flex; gap: 10px; align-items: center; font-size: 0.8rem; opacity: 0.7;">
+                        <span>📅 {{ tarea.fecha }}</span>
+                        {% if tarea.importante == 1 %} 
+                            <span class="priority-badge" style="background: rgba(255, 71, 71, 0.1); color: #ff4747; padding: 2px 6px; border-radius: 4px; font-weight: bold;">★ ALTA</span> 
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="card-options-zone" style="display: flex; gap: 8px; align-items: center;">
+                    {% if ver_papelera == 1 %}
+                        <a href="{{ url_for('restaurar', id=tarea.id) }}" title="Restaurar" style="text-decoration:none; font-size: 1.2rem; filter: drop-shadow(0 0 5px var(--accent));">🔄</a>
+                    {% else %}
+                        <a href="{{ url_for('editar', id=tarea.id) }}" class="icon-btn" title="Editar detalles" style="text-decoration:none;">📝</a>
+                           
+                        <a href="{{ url_for('eliminar', id=tarea.id) }}" class="icon-btn" onclick="return confirm('¿Mover a la papelera? Podrás recuperarla en 48 horas.')" title="Mover a papelera" style="text-decoration:none;">🗑️</a>
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+
+        {% if tareas|length > 3 %}
+            <button id="btn-toggle-tareas" class="btn-main-secondary" style="width: 100%; margin-top: 15px; font-weight: bold;" onclick="toggleTareas()">
+                Ver {{ tareas|length - 3 }} tareas más ▾
+            </button>
+        {% endif %}
+    {% else %}
+        <div class="empty-state" style="text-align: center; padding: 60px 20px; border: 2px dashed rgba(255,255,255,0.05); border-radius: 20px; margin-top: 20px;">
+            <div style="font-size: 3rem; margin-bottom: 15px; opacity: 0.3;"></div>
+            <p style="opacity: 0.5; font-size: 0.9rem;">
+                {% if ver_papelera == 1 %} 
+                    Tu papelera de reciclaje está vacía por ahora. 
+                {% else %} 
+                    ¡Excelente trabajo! No tienes elementos pendientes por aquí. 
+                {% endif %} 
+            </p>
+        </div>
+    {% endif %}
+</div>
     </div>
-</div>
-</div>
 </div>
 
 <div id="ai-assistant-container" class="ai-float-wrapper">
-    <button class="ai-main-btn" onclick="toggleAssistant(); analizarPrioridades();">
+    <button class="ai-main-btn" onclick="toggleAssistant();" title="Asistente de IA">
         <div class="robot-container">
             {% set nivel = ((user_xp | default(0)) // 500) + 1 %}
             <div class="aura-fx lvl-{{ nivel }}"></div>
@@ -167,142 +157,318 @@
                 <span class="pulse-dot"></span>
                 <span class="system-title">CORE <span class="accent-text">INTELLIGENCE</span></span>
             </div>
-            <button onclick="toggleAssistant()" class="close-ui-btn" aria-label="Cerrar">&times;</button>
+            <button onclick="toggleAssistant()" class="close-ui-btn" aria-label="Cerrar Panel">&times;</button>
         </div>
         <div class="ai-body">
             <div class="ai-scanner-bar"></div>
-            <div class="glitch-text">Revisando tareas...</div>
-            <div id="ai-content"></div>
+            <div class="glitch-text" id="ai-status">Analizando tu agenda...</div>
+            <div id="ai-content">
+                </div>
         </div>
     </div>
 </div>
 
 <div id="help-container-root" class="help-container-wrapper">
-    <button class="help-trigger pulse" onclick="toggleHelp()" title="Guía de uso">
+    <button class="help-trigger pulse" onclick="toggleHelp()" title="Ayuda y Consejos">
         <span class="help-icon">❓</span>
     </button>
-    
     <div id="help-modal" class="help-card" style="display: none;">
         <div class="help-header">
-            <span class="help-title"><i class="fas fa-info-circle"></i> Centro de Ayuda</span>
+            <span class="help-title"><i class="fas fa-question-circle"></i> Guía de Uso</span>
             <button onclick="toggleHelp()" class="close-help">&times;</button>
-        </div>
-        <div class="help-body">
-            <div class="help-step">
-                <strong><i class="fas fa-tasks"></i> Organiza rápido</strong>
-                <p>Agrega tareas y marca con ★ las que sean urgentes.</p>
-            </div>
-            <div class="help-step">
-                <strong><i class="fas fa-history"></i> Recuperación 48h</strong>
-                <p>Las tareas borradas se pueden restaurar en 48 horas.</p>
-            </div>
-            <div class="help-step">
-                <strong><i class="fas fa-fire"></i> Rachas activas</strong>
-                <p>Cumple tareas cada día para mantener tu impulso.</p>
-            </div>
-            <div class="help-step">
-                <strong><i class="fas fa-robot"></i> Asistente rápido</strong>
-                <p>Revisa prioridades y sugiere qué hacer primero.</p>
-            </div>            
-            <a href="{{ url_for('logros') }}" class="btn-help-link">Ver mis logros</a>
         </div>
     </div>
 </div>
-<script>
 
-function toggleEnfoque() {
-    const body = document.body;
-    const btn = document.getElementById('btn-enfoque');
-    
-    // Alternamos la clase en el body
-    body.classList.toggle('modo-enfoque-activo');
+<div id="modal-qr-compartir" class="modal-premium" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,23,42,0.9); z-index: 2000; align-items: center; justify-content: center; backdrop-filter: blur(10px);">
+    <div class="glass-card" style="max-width: 400px; width: 90%; text-align: center; padding: 30px; border: 2px solid var(--accent); position: relative; box-shadow: 0 20px 50px rgba(0,0,0,0.6);">
+        
+        <h3 style="color: var(--accent); margin-top: 0; font-weight: 800; letter-spacing: 1px;">COMPARTIR MISIÓN</h3>
+        <p style="font-size: 0.85rem; opacity: 0.7; margin-bottom: 20px;">Pídele a tu compañero que escanee este código desde su Agenda Maestra para clonar los detalles al instante.</p>
+        
+        <div id="contenedor-codigo-qr" style="background: white; padding: 15px; border-radius: 16px; display: inline-block; box-shadow: 0 10px 25px rgba(0,0,0,0.3); margin-bottom: 20px;">
+            <div id="qr-loading-placeholder" style="color: #0f172a; font-weight: bold; padding: 40px 20px;">Generando código encriptado...</div>
+        </div>
+        
+        <div style="margin-top: 5px;">
+            <button type="button" onclick="cerrarModalCompartirQR()" class="btn-retro" style="background: rgba(255,71,87,0.2); color: #ff4757; border: 1px solid rgba(255,71,87,0.3); padding: 12px 25px; border-radius: 10px; width: 100%; font-weight: 700; cursor: pointer; transition: all 0.3s;">
+                CERRAR VENTANA
+            </button>
+        </div>
+    </div>
+</div>
 
-    // Cambiamos el aspecto del botón según el estado
-    if (body.classList.contains('modo-enfoque-activo')) {
-        btn.innerHTML = "Ver Todo";
-        btn.style.background = "var(--accent)";
-        btn.style.color = "#0f172a";
-    } else {
-        btn.innerHTML = "Modo Enfoque";
-        btn.style.background = "rgba(56, 189, 248, 0.1)";
-        btn.style.color = "var(--accent)";
+<style>
+    /* Estilos estructurales para el contenedor del código QR */
+    #contenedor-codigo-qr img, 
+    #contenedor-codigo-qr canvas {
+        width: 200px !important;
+        height: 200px !important;
+        max-width: 200px !important;
+        max-height: 200px !important;
+        display: block !important;
+        margin: 0 auto !important;
     }
-}
-    /**
-     * Alterna la visibilidad del menú de opciones adicionales.
-     */
-    function toggleMenuMasOpciones() {
-        const menu = document.getElementById('menu-mas-opciones');
-        if (menu) {
+
+    .btn-modo-enfoque-trigger {
+        background: rgba(56, 189, 248, 0.1); 
+        border: 1px solid rgba(56, 189, 248, 0.2);
+        color: var(--accent, #38bdf8); 
+        padding: 6px 10px; 
+        border-radius: 8px; 
+        font-size: 0.85rem;
+        cursor: pointer; 
+        margin-left: 5px; 
+        transition: all 0.2s ease-in-out;
+    }
+
+    .btn-modo-enfoque-trigger:hover {
+        background: rgba(56, 189, 248, 0.2);
+        border-color: var(--accent, #38bdf8);
+        transform: scale(1.05);
+    }
+</style>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+<script>
+(function() {
+    "use strict";
+
+    const UI = {
+        getModal: () => document.getElementById("modal-qr-global") || document.getElementById("qr-modal") || document.getElementById("modal-qr-compartir"),
+        getContenedor: () => document.getElementById("contenedor-codigo-qr") || document.getElementById("qrcode"),
+        getTextoInfo: () => document.getElementById("info-tarea-qr") || document.getElementById("qr-info"),
+        getMenuOpciones: () => document.getElementById('menu-mas-opciones')
+    };
+
+    function inicializarComponentesInterfaz() {
+        const tarjetas = document.querySelectorAll('.tarea-card');
+        
+        tarjetas.forEach(card => {
+
+            if (card.querySelector('.btn-modo-enfoque-trigger')) return;
+
+            const actionsContainer = card.querySelector('.tarea-actions') || card;
+            const tema = card.querySelector('.tema-title')?.innerText || 'Tarea';
+            const materia = card.querySelector('.materia-tag')?.innerText || 'General';
+
+            const btnEnfoque = document.createElement('button');
+            btnEnfoque.className = 'btn-modo-enfoque-trigger';
+            btnEnfoque.title = 'Activar Modo Enfoque Pomodoro';
+            btnEnfoque.innerHTML = '🎯';
+            
+            btnEnfoque.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (typeof activarModoEnfoque === 'function') {
+                    activarModoEnfoque(tema, materia);
+                } else {
+                    console.warn("La función global 'activarModoEnfoque' no está definida en el sistema.");
+                }
+            });
+
+            actionsContainer.appendChild(btnEnfoque);
+        });
+    }
+
+    function renderizarQR(elementoContenedor, datosJSON) {
+        elementoContenedor.innerHTML = ""; 
+        const stringDatos = JSON.stringify(datosJSON);
+
+        if (typeof QRCode !== "undefined") {
+            try {
+                new QRCode(elementoContenedor, {
+                    text: stringDatos,
+                    width: 210,
+                    height: 210,
+                    colorDark: "#0f172a",
+                    colorLight: "#ffffff",
+                    correctLevel: QRCode.CorrectLevel.M
+                });
+                return; 
+            } catch (error) {
+                console.warn("Fallo en renderizado local, activando fallback de API externa...", error);
+            }
+        }
+
+        const urlApiQR = `https://api.qrserver.com/v1/create-qr-code/?size=210x210&data=${encodeURIComponent(stringDatos)}&margin=10`;
+        elementoContenedor.innerHTML = `
+            <img src="${urlApiQR}" 
+                 alt="Código QR de la Tarea" 
+                 style="display: block; margin: 0 auto; max-width: 100%; height: auto; border-radius: 8px;"
+                 onerror="this.parentElement.innerHTML='<span style=\'color:#ff4757; font-size:13px; font-weight:bold;\'>❌ Error total al generar el QR.</span>'"
+            />`;
+    }
+
+    window.generarCompartir = function(elementoBoton) {
+        const contenedor = UI.getContenedor();
+        const modal = UI.getModal();
+        if (!contenedor || !modal) return;
+
+        contenedor.innerHTML = "";
+        
+        try {
+            const datos = {
+                mat: elementoBoton.getAttribute('data-materia') || "Tarea",
+                tem: elementoBoton.getAttribute('data-tema') || "General",
+                fec: elementoBoton.getAttribute('data-fecha') || "",
+                imp: parseInt(elementoBoton.getAttribute('data-important')) || 0,
+                col: elementoBoton.getAttribute('data-color') || "#38bdf8"
+            };
+
+            const textoInfo = UI.getTextoInfo();
+            if (textoInfo) {
+                textoInfo.innerText = `${datos.mat}\n"${datos.tem}"`;
+            }
+
+            modal.style.display = "flex";
+
+            setTimeout(() => {
+                renderizarQR(contenedor, datos);
+            }, 50);
+
+        } catch (e) {
+            console.error("Fallo crítico en generación síncrona QR:", e);
+            alert("Error al procesar el elemento. Intenta recargar la interfaz.");
+        }
+    };
+
+    window.abrirGeneradorQR = window.abrirCompartirTareaQR = function(tareaId) {
+        const contenedor = UI.getContenedor();
+        const infoTexto = UI.getTextoInfo();
+        const modal = UI.getModal();
+        
+        if (!modal || !contenedor) return;
+
+        contenedor.innerHTML = '<div style="color: #0f172a; font-weight: 600; padding: 40px 20px; font-family: sans-serif; text-align:center;">Cifrando parámetros...</div>';
+        if (infoTexto) infoTexto.innerText = "Sincronizando terminal...";
+        
+        modal.style.display = 'flex';
+
+        fetch(`/compartir_tarea/${tareaId}`)
+            .then(res => {
+                if (!res.ok) throw new Error("Respuesta de red inválida");
+                return res.json();
+            })
+            .then(res => {
+                if (res.success && res.datos) {
+                    if (infoTexto) infoTexto.innerText = `${res.datos.mat}\n"${res.datos.tem}"`;
+                    
+                    setTimeout(() => {
+                        renderizarQR(contenedor, res.datos);
+                    }, 50);
+                } else {
+                    contenedor.innerHTML = `<div style="color: #ff4757; font-weight: bold; padding: 20px; text-align:center;">❌ Error: ${res.error || "Datos corruptos"}</div>`;
+                    if (infoTexto) infoTexto.innerText = "Error en datos.";
+                }
+            })
+            .catch(err => {
+                console.error("Error en el flujo Fetch:", err);
+                contenedor.innerHTML = '<div style="color: #ff4757; font-weight: bold; padding: 20px; text-align:center;">❌ Error de conexión al servidor</div>';
+                if (infoTexto) infoTexto.innerText = "Error de enlace local.";
+            });
+    };
+
+    window.cerrarModalQR = window.cerrarModalCompartirQR = function(event) {
+        if (event && typeof event.preventDefault === 'function') {
+            event.stopPropagation();
+            event.preventDefault();
+        }
+        const modal = UI.getModal();
+        const contenedor = UI.getContenedor();
+        
+        if (modal) modal.style.display = 'none';
+        if (contenedor) contenedor.innerHTML = ""; 
+    };
+
+    document.addEventListener("DOMContentLoaded", function() {
+        inicializarComponentesInterfaz();
+    });
+
+    document.addEventListener('click', function(event) {
+        const targetCompartir = event.target.closest('.btn-compartir');
+        if (targetCompartir) {
+            event.preventDefault();
+            window.generarCompartir(targetCompartir);
+            return;
+        }
+
+        const modal = UI.getModal();
+        if (modal && modal.style.display === 'flex') {
+            if (event.target === modal) {
+                window.cerrarModalQR(event);
+                return;
+            }
+        }
+
+        const btnMenu = event.target.closest('.dropdown-btn');
+        const menu = UI.getMenuOpciones();
+        if (btnMenu && menu) {
+            event.stopPropagation();
             const isVisible = menu.style.display === 'block';
             menu.style.display = isVisible ? 'none' : 'block';
+        } else if (menu && !event.target.closest('.dropdown-content')) {
+            menu.style.display = 'none';
         }
-    }
+    });
 
-    /**
-     * Cierre automático de menús al detectar clics fuera de los botones de activación.
-     */
-    window.onclick = function(event) {
-        if (!event.target.matches('.dropdown-btn')) {
-            const menu = document.getElementById('menu-mas-opciones');
-            if (menu && menu.style.display === 'block') {
-                menu.style.display = 'none';
-            }
-        }
-    }
-
-    /**
-     * Función original de mostrar todas las tareas (Primer Script)
-     */
-    function mostrarTodasLasTareas() {
-        const tareasOcultas = document.querySelectorAll('.tarea-oculta');
-        const boton = document.getElementById('btn-mostrar-mas');
-
-        tareasOcultas.forEach(tarea => {
-            tarea.style.display = 'grid'; 
-            tarea.style.animation = 'fadeIn 0.4s ease forwards';
-        });
-
-        if (boton) {
-            boton.style.display = 'none';
-        }
-    }
-
-    /**
-     * Función toggle con scroll y cambio de texto (Segundo Script)
-     * He adaptado para que reconozca tanto .tarea-extra como .tarea-oculta
-     */
-    function toggleTareas() {
-        const tareasExtra = document.querySelectorAll('.tarea-extra, .tarea-oculta');
-        const btn = document.getElementById('btn-toggle-tareas') || document.getElementById('btn-mostrar-mas');
-        
-        if (tareasExtra.length === 0) return;
-
-        // Verificamos si están ocultas (usando el primer elemento como referencia)
-        const estanOcultas = window.getComputedStyle(tareasExtra[0]).display === 'none' || tareasExtra[0].style.display === 'none';
-
-        if (estanOcultas) {
-            // MOSTRAR TODAS
-            tareasExtra.forEach(tarea => {
-                tarea.style.display = 'grid';
-                tarea.style.animation = 'fadeIn 0.4s ease forwards';
-            });
-            if (btn) btn.innerHTML = `Ocultar tareas extra ▴`;
-        } else {
-            // OCULTAR
-            tareasExtra.forEach(tarea => {
-                tarea.style.display = 'none';
-            });
-            if (btn) {
-                btn.innerHTML = `Ver ${tareasExtra.length} tareas más ▾`;
-                btn.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-            }
-        }
-    }
+    console.log("🚀 Motor de Agenda Maestra v7.5 Activo. Integración total Pomodoro/QR completada con éxito.");
+})();
 </script>
-<style>
-    
 
+<style>
+    .btn-compartir {
+        background: none;
+        border: none;
+        font-size: 1.4rem;
+        cursor: pointer;
+        padding: 5px;
+        transition: transform 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .btn-compartir:hover { transform: scale(1.2); }
+    
+    #qrcode img {
+        margin: 0 auto; /* Centrar el QR generado */
+        border: 10px solid white;
+        border-radius: 8px;
+    }
+</style>
+
+<style>
+/* ANIMACIONES EXCLUSIVAS PARA LA CARGA DE TAREAS */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.tarea-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.tarea-card:active {
+    transform: scale(0.98);
+}
+
+/* EFECTO PULSO PARA EL BOTÓN DE AYUDA */
+.pulse {
+    animation: shadow-pulse 2s infinite;
+}
+
+@keyframes shadow-pulse {
+    0% { box-shadow: 0 0 0 0px rgba(56, 189, 248, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(56, 189, 248, 0); }
+    100% { box-shadow: 0 0 0 0px rgba(56, 189, 248, 0); }
+}   
     /* SISTEMA DE VARIABLES DINÁMICAS (MODO OSCURO / CLARO) */
     :root {
         /* Configuración por defecto (Dark Mode) */

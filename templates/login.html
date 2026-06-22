@@ -1,53 +1,79 @@
 {% extends 'layout.html' %} 
+
 {% block content %} 
+
 <div class="main-wrapper"> 
-     <div class="glass-card" style="text-align: center; max-width: 400px; margin: 0 auto;"> 
-         <h1 style="margin-bottom: 10px; font-weight: 800; letter-spacing: -1px;">INICIAR SESIÓN</h1> 
+     <!-- Contenedor Principal con optimización de espaciado -->
+     <div class="glass-card" style="text-align: center; max-width: 400px; margin: 0 auto; animation: fadeIn 0.5s ease-out;"> 
+
+         <h1 style="margin-bottom: 10px; font-weight: 800; letter-spacing: -1px; text-transform: uppercase;">INICIAR SESIÓN</h1> 
+
          <p style="margin-bottom: 30px; opacity: 0.6; font-size: 0.9rem;">Bienvenido a tu terminal de productividad</p> 
-                  
+
+         <!-- Sistema de Mensajes Flashed -->
          {% with messages = get_flashed_messages(with_categories=true) %} 
              {% if messages %} 
                  {% for category, message in messages %} 
-                 <div style="background: rgba({% if category == 'success' %}46, 213, 115{% else %}255, 71, 87{% endif %}, 0.15); 
+                 <div class="alert-box" style="background: rgba({% if category == 'success' %}46, 213, 115{% else %}255, 71, 87{% endif %}, 0.15); 
                              color: {% if category == 'success' %}#2ed573{% else %}#ff4757{% endif %}; 
                              padding: 12px; border-radius: 12px; margin-bottom: 20px; font-size: 0.85rem; font-weight: 700; 
-                             border: 1px solid rgba({% if category == 'success' %}46, 213, 115{% else %}255, 71, 87{% endif %}, 0.3);"> 
+                             border: 1px solid rgba({% if category == 'success' %}46, 213, 115{% else %}255, 71, 87{% endif %}, 0.3);
+                             animation: slideDown 0.3s ease;"> 
                      {{ message }} 
                  </div> 
                  {% endfor %} 
              {% endif %} 
          {% endwith %} 
 
-         <form method="POST" style="display: flex; flex-direction: column; gap: 15px;"> 
+         <!-- Formulario de Login -->
+         <form method="POST" style="display: flex; flex-direction: column; gap: 18px;"> 
+             
+             <!-- Campo Usuario -->
              <div style="text-align: left;">
-                 <label style="font-size: 0.7rem; font-weight: 800; opacity: 0.5; text-transform: uppercase; margin-left: 5px;">Usuario</label>
-                 <input type="text" name="usuario" placeholder="Ingresa tu usuario" required 
-                        style="width: 100%; padding: 14px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 12px; color: white; outline: none; transition: 0.3s;">
+                 <label style="font-size: 0.7rem; font-weight: 800; opacity: 0.5; text-transform: uppercase; margin-left: 5px; display: block; margin-bottom: 5px;">Usuario</label>
+                 <input type="text" name="usuario" placeholder="Ingresa tu usuario" required autocomplete="username"
+                        style="width: 100%; padding: 14px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 12px; color: white; outline: none; transition: all 0.3s ease;">
              </div>
 
-             <div style="text-align: left;">
-                 <label style="font-size: 0.7rem; font-weight: 800; opacity: 0.5; text-transform: uppercase; margin-left: 5px;">Contraseña</label>
-                 <input type="password" name="password" placeholder="Tu clave maestra" required 
-                        style="width: 100%; padding: 14px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 12px; color: white; outline: none; transition: 0.3s;">
+             <!-- Campo Contraseña con botón Mostrar/Ocultar -->
+             <div style="text-align: left; position: relative;">
+                 <label style="font-size: 0.7rem; font-weight: 800; opacity: 0.5; text-transform: uppercase; margin-left: 5px; display: block; margin-bottom: 5px;">Contraseña</label>
+                 <div style="position: relative; display: flex; align-items: center;">
+                     <input type="password" id="password_field" name="password" placeholder="Tu clave maestra" required autocomplete="current-password"
+                            style="width: 100%; padding: 14px; padding-right: 45px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 12px; color: white; outline: none; transition: all 0.3s ease;">
+                     
+                     <!-- Botón de Ojo (Mostrar Contraseña) -->
+                     <button type="button" onclick="togglePassword()" 
+                             style="position: absolute; right: 12px; background: none; border: none; color: white; opacity: 0.4; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.3s; padding: 5px;">
+                        <svg id="eye_icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5c-2.12 0-3.879-1.168-5.168-2.457A13.134 13.134 0 0 1 1.172 8z"/>
+                            <path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z"/>
+                        </svg>
+                     </button>
+                 </div>
              </div>
 
-             <button type="submit" class="btn-main" style="margin-top: 10px; padding: 14px; font-weight: 800;">ENTRAR AL SISTEMA</button> 
+             <button type="submit" class="btn-main" style="margin-top: 5px; padding: 15px; font-weight: 800; cursor: pointer; transition: transform 0.2s;">
+                ENTRAR AL SISTEMA
+             </button> 
          </form> 
 
-         <div style="margin-top: 20px;">
+         <!-- Enlaces de soporte -->
+         <div style="margin-top: 25px; display: flex; flex-direction: column; gap: 12px;">
              <a href="{{ url_for('olvide_password') }}" style="color: var(--accent); text-decoration: none; font-size: 0.85rem; opacity: 0.8; font-weight: 600; transition: 0.3s;">
                  ¿Olvidaste tu contraseña?
              </a>
-         </div>
 
-         <p style="margin-top:25px; font-size: 0.9rem; opacity: 0.7;"> 
-             ¿No tienes cuenta? <a href="{{ url_for('registro') }}" style="color:var(--accent); text-decoration:none; font-weight:800;">Regístrate aquí</a> 
-         </p> 
+             <p style="font-size: 0.9rem; opacity: 0.7;"> 
+                 ¿No tienes cuenta? <a href="{{ url_for('registro') }}" style="color:var(--accent); text-decoration:none; font-weight:800; border-bottom: 1px solid transparent; transition: 0.3s;" onmouseover="this.style.borderBottom='1px solid var(--accent)'" onmouseout="this.style.borderBottom='1px solid transparent'">Regístrate aquí</a> 
+             </p> 
+         </div>
      </div>
 
+     <!-- Modal de Recuperación -->
      {% if recuperar %}
-     <div id="modal-recuperar" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 1000; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(8px); animation: fadeIn 0.3s ease;">
-         <div class="glass-card" style="max-width: 380px; width: 90%; border: 1px solid var(--accent); padding: 35px; position: relative;">
+     <div id="modal-recuperar" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 1000; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(10px); animation: fadeIn 0.3s ease;">
+         <div class="glass-card" style="max-width: 380px; width: 90%; border: 1px solid var(--accent); padding: 35px; position: relative; box-shadow: 0 0 30px rgba(56, 189, 248, 0.2);">
              <h2 style="font-size: 1.3rem; color: var(--accent); font-weight: 800; margin-bottom: 10px;">RECUPERAR ACCESO</h2>
              <p style="font-size: 0.85rem; opacity: 0.7; margin-bottom: 25px; line-height: 1.4;">Ingresa tu correo electrónico para enviarte un enlace de restablecimiento seguro.</p>
              
@@ -65,15 +91,40 @@
      {% endif %}
 </div>
 
+<script>
+    // Función para mostrar/ocultar contraseña
+    function togglePassword() {
+        const passwordField = document.getElementById('password_field');
+        const eyeIcon = document.getElementById('eye_icon');
+        
+        if (passwordField.type === 'password') {
+            passwordField.type = 'text';
+            // Cambiar icono a ojo con tachado
+            eyeIcon.innerHTML = '<path d="M13.359 11.238C15.06 9.72 16 8 16 8s-3-5.5-8-5.5a7.028 7.028 0 0 0-2.79.588l.77.771A5.944 5.944 0 0 1 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.134 13.134 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755-.165.165-.337.328-.517.486l.708.709z"/><path d="M11.297 9.176a3.5 3.5 0 0 0-4.474-4.474l.823.823a2.5 2.5 0 0 1 2.828 2.829l.823.822zm-4.12 1.91l-1.283-1.283A11.347 11.347 0 0 1 1.172 8c.056-.086.12-.18.192-.284C1.7 7.238 2.196 6.6 2.831 5.966c.21-.21.432-.415.666-.604l-.708-.708A12.63 12.63 0 0 0 1.173 8s3 5.5 8 5.5a7.028 7.028 0 0 0 2.79-.588l-.77-.771A5.944 5.944 0 0 1 8 12.5c-2.12 0-3.879-1.168-5.168-2.457A13.134 13.134 0 0 1 1.172 8z"/><path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z"/><path d="M1 1l14 14"/>';
+        } else {
+            passwordField.type = 'password';
+            // Volver al icono de ojo normal
+            eyeIcon.innerHTML = '<path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5c-2.12 0-3.879-1.168-5.168-2.457A13.134 13.134 0 0 1 1.172 8z"/><path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z"/>';
+        }
+    }
+</script>
+
 <style>
     @keyframes fadeIn {
-        from { opacity: 0; }
-        to { opacity: 1; }
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes slideDown {
+        from { opacity: 0; transform: translateY(-10px); }
+        to { opacity: 1; transform: translateY(0); }
     }
     input:focus {
         border-color: var(--accent) !important;
         background: rgba(255,255,255,0.1) !important;
         box-shadow: 0 0 15px rgba(56, 189, 248, 0.2);
+    }
+    .btn-main:active {
+        transform: scale(0.98);
     }
 </style>
 {% endblock %}

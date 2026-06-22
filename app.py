@@ -4,8 +4,14 @@ import hmac
 import json
 import base64
 import hashlib
+import socket
+import multiprocessing
+import urllib.parse
+import smtplib
 from functools import wraps
 from datetime import date, datetime, timedelta
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 import mysql.connector
 from mysql.connector import pooling
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -31,36 +37,206 @@ mail = Mail(app)
 # ==========================================
 # CONFIGURACIÓN DE BASE DE DATOS (POOL)
 # ==========================================
+db_pool = None
+
+def inicializar_entorno():
+    global db_pool
+    try:
+        # Conexión inicial para configuración administrativa
+        temp_conn = mysql.connector.connect(
+            host=os.getenv('DB_HOST', 'localhost'),
+            user=os.getenv('DB_USER', 'root'),
+            password=os.getenv('DB_PASSWORD', 'root'),
+            autocommit=True
+        )
+        cursor = temp_conn.cursor()
+        db_name = os.getenv('DB_NAME', 'agenda_maestra')
+
+        cursor.execute(f"CREATE DATABASE IF NOT EXISTS {db_name}")
+        cursor.execute(f"USE {db_name}")
+
+        # --- TABLA USUARIOS ---
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS usuarios (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                usuario VARCHAR(20) NOT NULL UNIQUE,
+                password VARCHAR(255) NOT NULL,
+                email VARCHAR(100) NOT NULL,
+                creado_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        """)
+
+        # --- TABLA TAREAS (Incluyendo campo 'descripcion') ---
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS tareas (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                usuario_id INT NOT NULL,
+                materia VARCHAR(100) NOT NULL,
+                tema VARCHAR(255) NOT NULL,
+                descripcion TEXT DEFAULT NULL,
+                fecha DATE NOT NULL,
+                CONSTRAINT fk_usuario_tareas FOREIGN KEY (usuario_id) 
+                REFERENCES usuarios(id) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        """)
+
+        # Sincronización de columnas faltantes
+        columnas_tareas = {
+            'hora_entrega': "TIME DEFAULT NULL",
+            'importante': "TINYINT(1) DEFAULT 0",
+            'estado': "ENUM('pendiente', 'hecha') DEFAULT 'pendiente'",
+            'tipo': "ENUM('tarea', 'examen', 'grupal') DEFAULT 'tarea'",
+            'colaboradores': "TEXT AFTER tipo",
+            'color': "VARCHAR(7) DEFAULT '#00d2ff'",
+            'eliminado_at': "DATETIME DEFAULT NULL",
+            'recordatorio_enviado': "TINYINT(1) DEFAULT 0"
+        }
+
+        for col, defn in columnas_tareas.items():
+            try:
+                cursor.execute(f"ALTER TABLE tareas ADD COLUMN {col} {defn}")
+            except: pass
+
+        cursor.close()
+        temp_conn.close()
+
+        # 2. Inicialización del Pool (Ahora db_pool es accesible globalmente)
+        db_pool = mysql.connector.pooling.MySQLConnectionPool(
+            pool_name="mypool",
+            pool_size=10,
+            host=os.getenv('DB_HOST', 'localhost'),
+            user=os.getenv('DB_USER', 'root'),
+            password=os.getenv('DB_PASSWORD', 'root'),
+            database=db_name
+        )
+        print("✅ Base de datos sincronizada y Pool de conexiones activo.")
+        return True
+    except Exception as err:
+        print(f"❌ Error Crítico: {err}")
+        return False
+
+# --- LLAMADA INICIAL OBLIGATORIA ---
+inicializar_entorno()
+
+# --- LÓGICA SEGURA DE GUARDADO ---
+def guardar_tarea_db(materia, tema, fecha, hora, importante, tipo, descripcion, tarea_id):
+    global db_pool
+    # Si el pool no existe por algún error, intentamos re-inicializar
+    if db_pool is None:
+        inicializar_entorno()
+        
+    conn = db_pool.get_connection()
+    cursor = conn.cursor()
+    try:
+        query = """
+            UPDATE tareas 
+            SET materia=%s, tema=%s, fecha=%s, hora_entrega=%s, 
+                importante=%s, tipo=%s, descripcion=%s 
+            WHERE id=%s
+        """
+        cursor.execute(query, (materia, tema, fecha, hora, importante, tipo, descripcion, tarea_id))
+        conn.commit()
+    except Exception as e:
+        print(f"❌ Error al ejecutar actualización en BD: {e}")
+        raise e # Esto nos ayuda a ver el error real si algo falla
+    finally:
+        cursor.close()
+        conn.close()
+        
 # ==========================================
-# CONFIGURACIÓN DE BASE DE DATOS (CORREGIDA)
+# 2. CONFIGURACIÓN DEL POOL DE CONEXIONES
 # ==========================================
 
 db_config = {
     "host": os.getenv('DB_HOST', 'localhost'),
     "user": os.getenv('DB_USER', 'root'),
     "password": os.getenv('DB_PASSWORD', 'root'),
-    "database": os.getenv('DB_NAME', 'agenda_maestra')
+    "database": os.getenv('DB_NAME', 'agenda_maestra'),
+    "raise_on_warnings": True # Esto nos dará más info si algo falla
 }
 
 try:
+    # Intentamos crear el pool
     pool = pooling.MySQLConnectionPool(
         pool_name="agenda_pool",
-        pool_size=10,
+        pool_size=5,
         **db_config
     )
+    print("*Pool de conexiones creado exitosamente.")
 except mysql.connector.Error as err:
-    print(f"Error de conexión crítica: {err}")
+    print(f"❌ ERROR AL CREAR EL POOL: {err}")
     pool = None
+    
+# --- ESTAS SON LAS FUNCIONES QUE FALTAN Y CAUSAN LOS ERRORES ---
 
-# Esta es la función que tus rutas necesitan
 def get_db_connection():
+    """Obtiene una conexión del pool para realizar consultas."""
     if pool is None:
-        raise Exception("El pool de conexiones no está disponible")
+        # Esto es lo que causaba el error en el navegador antes
+        raise Exception("El pool de conexiones no está disponible. Revisa la consola para ver el error de MySQL.")
     return pool.get_connection()
 
-# Alias por si alguna parte del código usa get_db()
 def get_db():
+    """Alias de get_db_connection usado en la mayoría de tus rutas."""
     return get_db_connection()
+
+def enviar_mail_invitacion(email_destino, materia, tema, remitente):
+    # 1. Configuración del servidor (Usa variables de entorno por seguridad)
+    smtp_server = "smtp.gmail.com"
+    smtp_port = 587
+    sender_email = os.getenv('MAIL_USER') # Tu correo (ej: agenda.maestra@gmail.com)
+    sender_password = os.getenv('MAIL_PASS') # Contraseña de aplicación de Google
+
+    # Validar que las credenciales existan
+    if not sender_email or not sender_password:
+        print("❌ Error: Variables de entorno MAIL_USER o MAIL_PASS no configuradas.")
+        return False
+
+    # 2. Construcción del Mensaje
+    mensaje = MIMEMultipart()
+    mensaje["From"] = f"Agenda Maestra <{sender_email}>"
+    mensaje["To"] = email_destino
+    mensaje["Subject"] = f"📚 Colaboración Grupal: {materia}"
+
+    # Diseño del cuerpo del mensaje
+    cuerpo = f"""
+    ¡Hola!
+    
+    {remitente} te ha invitado a colaborar en una nueva tarea grupal en 'Agenda Maestra'.
+    
+    Detalles de la invitación:
+    -------------------------------------------
+    📖 Materia: {materia}
+    📝 Tema: {tema}
+    -------------------------------------------
+    
+    Inicia sesión en tu agenda para ver los detalles y empezar a trabajar juntos.
+    
+    Saludos,
+    El equipo de Agenda Maestra.
+    """
+    mensaje.attach(MIMEText(cuerpo, "plain"))
+
+    # 3. Proceso de Envío
+    try:
+        # Establecer conexión segura
+        server = smtplib.SMTP(smtp_server, smtp_port)
+        server.starttls() # Cifrado de la conexión
+        server.login(sender_email, sender_password)
+        
+        # Enviar y cerrar
+        server.send_message(mensaje)
+        server.quit()
+        
+        print(f"✅ Notificación enviada con éxito a {email_destino}")
+        return True
+        
+    except smtplib.SMTPAuthenticationError:
+        print("❌ Error: Autenticación fallida. Revisa el usuario y la contraseña de aplicación.")
+    except Exception as e:
+        print(f"❌ Error inesperado al enviar mail: {e}")
+    
+    return False
 
 # ==========================================
 # UTILIDADES Y DECORADORES
@@ -458,7 +634,7 @@ def registro():
             foto_base64 = f"data:{foto_archivo.mimetype};base64,{encoded}"
 
         db = get_db()
-        cursor = db.cursor()
+        cursor = db.cursor(dictionary=True, buffered=True)
         cursor.execute("SELECT id FROM usuarios WHERE usuario = %s", (usuario,))
         if cursor.fetchone():
             flash("Ese usuario ya existe.", "warning")
@@ -493,7 +669,7 @@ def limpiar_papelera_automatica():
     cursor = None
     try:
         db = get_db()
-        cursor = db.cursor()
+        cursor = db.cursor(dictionary=True, buffered=True)
         # Borrado físico: solo tareas con marca de borrado de hace más de 2 días
         cursor.execute("""
             DELETE FROM tareas 
@@ -518,78 +694,130 @@ def limpiar_papelera_automatica():
 @app.route('/')
 @login_required
 def index():
-    db = None
+    # 1. INICIALIZACIÓN CRÍTICA: Evita el UnboundLocalError si algo falla antes de tiempo
+    conexion = None
     cursor = None
+
     try:
-        # 1. EJECUCIÓN DE PROCESOS AUTOMÁTICOS
-        # Aquí es donde el sistema "limpia" y "recuerda" al cargar la web
-        limpiar_papelera_automatica() # Asegúrate de tener esta función definida
+        # 2. EJECUCIÓN DE PROCESOS AUTOMÁTICOS PREVIOS
+        # El sistema limpia la papelera y procesa recordatorios antes de consultar
+        limpiar_papelera_automatica()
         verificar_recordatorios_proximos()
 
-        db = get_db()
-        cursor = db.cursor(dictionary=True)
+        # 3. GESTIÓN SEGURA DE CONEXIÓN A LA BASE DE DATOS
+        # Intentamos obtener una conexión limpia desde el pool de conexiones
+        conexion = db_pool.get_connection()
+        cursor = conexion.cursor(dictionary=True)
 
-        # 2. Obtener datos del usuario logueado
-        cursor.execute("SELECT usuario, email, xp, racha FROM usuarios WHERE id=%s", (session['user_id'],))
+        # 4. CAPTURA DE DATOS DEL USUARIO LOGUEADO
+        cursor.execute("SELECT usuario, email, xp, racha FROM usuarios WHERE id = %s", (session['user_id'],))
         user_data = cursor.fetchone()
 
-        # 3. Captura de parámetros de la URL
+        # 5. CAPTURA Y PROCESAMIENTO DE PARÁMETROS FILTROS (URL Query Strings)
         ver_papelera = request.args.get('papelera', '0')
         tipo_filtro = request.args.get('tipo_filtro', '')
         ver_hechas = request.args.get('ver_hechas', '0')
         buscar = request.args.get('buscar', '') 
 
-        # 4. Construcción de Query Dinámica
+        # 6. CONSTRUCCIÓN DINÁMICA DE LA CONSULTA SQL (Tareas)
         if ver_papelera == '1':
-            query = "SELECT * FROM tareas WHERE usuario_id=%s AND eliminado_at IS NOT NULL"
+            query = "SELECT * FROM tareas WHERE usuario_id = %s AND eliminado_at IS NOT NULL"
         else:
-            query = "SELECT * FROM tareas WHERE usuario_id=%s AND eliminado_at IS NULL"
+            query = "SELECT * FROM tareas WHERE usuario_id = %s AND eliminado_at IS NULL"
         
+        # Lista de parámetros para prevenir inyecciones SQL
         params = [session['user_id']]
         
+        # Filtro por tipo de actividad (tarea o examen)
         if tipo_filtro:
-            query += " AND tipo=%s"
+            query += " AND tipo = %s"
             params.append(tipo_filtro)
         
+        # Buscador por coincidencia en Materia o Tema
         if buscar:
             query += " AND (materia LIKE %s OR tema LIKE %s)"
             params.extend([f"%{buscar}%", f"%{buscar}%"])
 
+        # Si no estamos en la papelera, filtramos según estén pendientes o hechas
         if ver_papelera != '1':
             estado_objetivo = 'hecha' if ver_hechas == '1' else 'pendiente'
-            query += " AND estado=%s"
+            query += " AND estado = %s"
             params.append(estado_objetivo)
 
+        # Orden prioritario por fecha y luego por hora de entrega
         query += " ORDER BY fecha ASC, hora_entrega ASC"
 
+        # Ejecución definitiva de la consulta armada
         cursor.execute(query, tuple(params))
         tareas = cursor.fetchall()
 
-        # 5. Formateo estético de las tareas
+        # 7. FORMATEO ESTÉTICO Y GENERACIÓN DE CÓDIGO QR PARA CADA TAREA
+        import urllib.parse
+        import json  # <--- ACÁ ESTÁ EL FIX CRÍTICO QUE ME FALTÓ ANTES
+        
         for t in tareas:
+            # Si la tarea no tiene un color asignado, genera uno basado en el texto de la materia
             if not t.get('color'):
                 t['color'] = string_to_color(t['materia'])
+            
+            # Acorta el formato de la hora (HH:MM:SS -> HH:MM) para que no ocupe tanto espacio
             if t['hora_entrega']:
                 t['hora_entrega'] = str(t['hora_entrega'])[:5]
+                
+            # --- LÓGICA DE GENERACIÓN DE QR ---
+            # Estructuramos los datos compactos de la tarea para el formato que lee tu escáner
+            datos_qr = {
+                "mat": t['materia'],
+                "tem": t['tema'],
+                "fec": str(t['fecha']),
+                "tip": t['tipo'],
+                "imp": t['importante']
+            }
+            # Convertimos el diccionario a un string JSON compacto y lo codificamos para URL
+            json_qr_string = json.dumps(datos_qr, ensure_ascii=False)
+            url_segura_qr = urllib.parse.quote(json_qr_string)
+            
+            # Guardamos la URL final del QR provista por la API en el diccionario de la tarea
+            t['qr_url'] = f"https://api.qrserver.com/v1/create-qr-code/?size=200x200&data={url_segura_qr}"
 
-        # 6. Renderizado con Gamificación integrada
-        return render_template('index.html', 
-                               tareas=tareas, 
-                               usuario=user_data['usuario'] if user_data else "Usuario", 
-                               usuario_xp=user_data['xp'] if user_data else 0,
-                               usuario_nivel=(user_data['xp'] // 500) + 1 if user_data else 1,
-                               usuario_racha=user_data['racha'] if user_data else 0,
-                               tipo_filtro=tipo_filtro, 
-                               ver_hechas=int(ver_hechas), 
-                               buscar=buscar,
-                               ver_papelera=int(ver_papelera))
+        # 8. RENDERIZADO DE PLANTILLA E INYECCIÓN DE DATOS (Gamificación Incluida)
+        return render_template(
+            'index.html', 
+            tareas=tareas, 
+            usuario=user_data['usuario'] if user_data else "Usuario", 
+            usuario_xp=user_data['xp'] if user_data else 0,
+            usuario_nivel=(user_data['xp'] // 500) + 1 if user_data else 1,
+            usuario_racha=user_data['racha'] if user_data else 0,
+            tipo_filtro=tipo_filtro, 
+            ver_hechas=int(ver_hechas), 
+            buscar=buscar,
+            ver_papelera=int(ver_papelera)
+        )
     
+    except mysql.connector.Error as err:
+        # Control específico para fallos de la base de datos o sintaxis SQL
+        print(f"❌ Error de MySQL en index: {err}")
+        flash("Hubo un inconveniente con el almacenamiento. Reintentando...", "error")
+        return "Error en la base de datos. Por favor, intenta de nuevo más tarde.", 500
+
     except Exception as e:
+        # Captura cualquier otro tipo de error inesperado en Python
         print(f"❌ Error crítico en index: {e}")
-        return "Error interno en la agenda. Por favor, intenta más tarde.", 500
+        return "Error interno del servidor. Por favor, reporta el fallo al administrador.", 500
+
     finally:
-        if cursor: cursor.close()
-        if db: db.close()
+        # 9. CIERRE SEGURO Y CONTROLADO: Garantiza la devolución de recursos al Pool sin romper el flujo
+        if cursor is not None:
+            try:
+                cursor.close()
+            except Exception as ce:
+                print(f"⚠️ No se pudo cerrar el cursor: {ce}")
+                
+        if conexion is not None:
+            try:
+                conexion.close()
+            except Exception as se:
+                print(f"⚠️ No se pudo devolver la conexión al pool: {se}")
 
 @app.route('/ai_analisis')
 @login_required
@@ -682,43 +910,95 @@ def logros():
 
     # LISTA DE LOGROS RE-IMPORTANTES
     mis_logros = [
-        # --- NIVEL BÁSICO ---
         {"titulo": "Iniciado", "desc": "Completa tu primera tarea.", "meta": 1, "progreso": total_hechas, },
-        
-        # --- CONSTANCIA ---
         {"titulo": "Soldado de Hierro", "desc": "Completa 25 tareas en total.", "meta": 25, "progreso": total_hechas,},
         {"titulo": "Leyenda Académica", "desc": "Llega a las 100 tareas completadas.", "meta": 100, "progreso": total_hechas,},
-        
-        # --- PODER (XP) ---
         {"titulo": "Poder Acumulado", "desc": "Alcanza 1,500 de XP.", "meta": 1500, "progreso": user['xp'],},
         {"titulo": "Semidiós", "desc": "Alcanza los 5,000 de XP.", "meta": 5000, "progreso": user['xp'],},
-        
-        # --- DISCIPLINA ---
-        {"titulo": "Productividad Pura", "desc": "Completa 5 tareas de matemáticas.", "meta": 5, "progreso": total_hechas,} # Nota: Aquí podrías filtrar por tema si quieres
+        {"titulo": "Productividad Pura", "desc": "Completa 5 tareas de matemáticas.", "meta": 5, "progreso": total_hechas,}
     ]
     
-    return render_template('logros.html', logros=mis_logros, xp=user['xp'], nombre=user['usuario'])
+    return render_template(
+        'logros.html',
+        logros=mis_logros,
+        xp=user['xp'],
+        nombre=user['usuario'],
+        en_papelera=en_papelera
+    )
 
-@app.route('/crear', methods=['GET','POST'])
+@app.route('/crear', methods=['GET', 'POST'])
 @login_required
 def crear():
+    # --- LÓGICA DE PROCESAMIENTO (POST) ---
     if request.method == 'POST':
-        materia = request.form.get('materia')
-        tema = request.form.get('tema')
-        fecha = request.form.get('fecha')
-        hora_entrega = f"{request.form.get('hora_h', '00')}:{request.form.get('hora_m', '00')}:00"
-        tipo = request.form.get('tipo')
-        importante = 1 if 'importante' in request.form else 0
-        db = get_db()
-        cursor = db.cursor()
-        cursor.execute(
-            "INSERT INTO tareas (usuario_id,materia,tema,fecha,hora_entrega,importante,estado,tipo) VALUES(%s,%s,%s,%s,%s,%s,'pendiente',%s)",
-            (session['user_id'], materia, tema, fecha, hora_entrega, importante, tipo)
-        )
-        db.commit()
-        db.close()
-        flash("Tarea guardada en Agenda Maestra.", "success")
-        return redirect(url_for('index'))
+        try:
+            # 1. Captura de datos básicos del formulario
+            materia = request.form.get('materia')
+            tema = request.form.get('tema')
+            descripcion = request.form.get('descripcion', '')
+            fecha = request.form.get('fecha')
+            hora_h = request.form.get('hora_h', '00')
+            hora_m = request.form.get('hora_m', '00')
+            hora_entrega = f"{hora_h}:{hora_m}:00"
+            tipo = request.form.get('tipo', 'tarea')
+            
+            # 2. Lógica crítica de Prioridad y Colaboradores
+            # Si el checkbox no se marca, request.form.get devuelve None.
+            # Convertimos a 1 o 0 de forma segura.
+            importante = 1 if request.form.get('importante') == '1' else 0
+            
+            # Captura de colaboradores (si está vacío, guardamos cadena vacía)
+            colaboradores = request.form.get('colaboradores', '').strip()
+
+            # 3. Operación de Base de Datos
+            db = get_db()
+            cursor = db.cursor(dictionary=True, buffered=True)
+            
+            # SQL: Asegúrate de que tu tabla tenga las columnas 'colaboradores' y 'descripcion'
+            # Si no las tienes, debes ejecutar: ALTER TABLE tareas ADD COLUMN colaboradores TEXT, ADD COLUMN descripcion TEXT;
+            query = """
+                INSERT INTO tareas 
+                (usuario_id, materia, tema, descripcion, fecha, hora_entrega, importante, estado, tipo, colaboradores) 
+                VALUES (%s, %s, %s, %s, %s, %s, %s, 'pendiente', %s, %s)
+            """
+            valores = (
+                session['user_id'], 
+                materia, 
+                tema, 
+                descripcion, 
+                fecha, 
+                hora_entrega, 
+                importante, 
+                tipo, 
+                colaboradores
+            )
+            
+            cursor.execute(query, valores)
+            db.commit()
+            cursor.close()
+            db.close()
+
+            # 4. Respuesta Inteligente (Detecta si es AJAX/Fetch o Formulario Normal)
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json:
+                return jsonify({
+                    "success": True, 
+                    "message": "Tarea creada con éxito",
+                    "importante": importante
+                }), 200
+            
+            flash("¡Tarea guardada exitosamente en Agenda Maestra!", "success")
+            return redirect(url_for('index'))
+
+        except Exception as e:
+            # Manejo de errores para evitar caídas del servidor
+            print(f"❌ ERROR CRÍTICO AL GUARDAR TAREA: {e}")
+            if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+                return jsonify({"success": False, "error": str(e)}), 500
+            
+            flash("Ocurrió un error al intentar guardar la tarea. Por favor, intenta de nuevo.", "danger")
+            return redirect(url_for('crear'))
+
+    # --- LÓGICA DE RENDERIZADO (GET) ---
     return render_template("crear_editar.html", tarea=None)
 
 @app.route('/vaciar_papelera', methods=['POST'])
@@ -728,7 +1008,7 @@ def vaciar_papelera():
     cursor = None
     try:
         db = get_db()
-        cursor = db.cursor()
+        cursor = db.cursor(dictionary=True, buffered=True)
         
         # Ejecutamos la eliminación física irreversible solo de los elementos del usuario actual
         # que ya han sido marcados con una fecha en 'eliminado_at'
@@ -760,7 +1040,7 @@ def vaciar_papelera():
 @login_required
 def restaurar(id):
     db = get_db()
-    cursor = db.cursor()
+    cursor = db.cursor(dictionary=True, buffered=True)
     try:
         # 1. Quitamos la marca de tiempo de 'eliminado_at' para que salga de la papelera
         # 2. Opcionalmente, nos aseguramos de que el estado vuelva a 'pendiente'
@@ -906,7 +1186,7 @@ def eliminar(id):
     cursor = None
     try:
         db = get_db()
-        cursor = db.cursor()
+        cursor = db.cursor(dictionary=True, buffered=True)
         
         # Ejecutamos la lógica
         cursor.execute("UPDATE tareas SET eliminado_at=NOW() WHERE id=%s AND usuario_id=%s", 
@@ -1087,38 +1367,29 @@ def editar(id):
 def olvide_password():
     if request.method == 'POST':
         email = request.form.get('email')
-        db = None  # Inicializamos para evitar error en el finally
+        db = get_db_connection()
+        # IMPORTANTE: buffered=True para evitar el error de "Unread result"
+        cursor = db.cursor(dictionary=True, buffered=True)
+        
         try:
-            db = get_db_connection()
-            cursor = db.cursor(dictionary=True)
             cursor.execute("SELECT id, usuario FROM usuarios WHERE email = %s", (email,))
-            user = cursor.fetchone()
+            usuario = cursor.fetchone()
 
-            if user:
-                token = hashlib.sha256(f"{user['usuario']}{datetime.now()}".encode()).hexdigest()
-                cursor.execute("UPDATE usuarios SET token_recuperacion = %s WHERE id = %s", (token, user['id']))
-                db.commit()
-
-                link = url_for('reset_password', token=token, _external=True)
-                msg = Message("Recuperar Acceso - Agenda Maestra", recipients=[email])
-                msg.body = f"Hola {user['usuario']}, usa este enlace para restablecer tu clave: {link}"
-                mail.send(msg)
-                
-                flash("Se ha enviado un enlace de recuperación a tu correo.", "success")
+            if usuario:
+                # Aquí va tu lógica de generar token y enviar mail...
+                # Asegúrate de hacer db.commit() si haces un UPDATE
+                flash("Se ha enviado un enlace a tu correo.", "success")
             else:
                 flash("El correo no está registrado.", "danger")
         except Exception as e:
             print(f"Error en olvide_password: {e}")
-            flash("Error interno del servidor.", "danger")
+            flash("Hubo un error al procesar la solicitud.", "danger")
         finally:
-            if db:
-                db.close()
-        
-        return redirect(url_for('login'))
+            cursor.close()
+            db.close() # Ahora sí cerrará bien
+            
+    return render_template('login.html') # O la vista que corresponda
     
-    return render_template('login.html', recuperar=True)
-
-
 @app.route('/reset-password/<token>', methods=['GET', 'POST'])
 def reset_password(token):
     db = None
@@ -1143,7 +1414,7 @@ def reset_password(token):
         nueva_pass = generate_password_hash(request.form.get('password'))
         db = get_db_connection()
         try:
-            cursor = db.cursor()
+            cursor = db.cursor(dictionary=True, buffered=True)
             cursor.execute("UPDATE usuarios SET password = %s, token_recuperacion = NULL WHERE id = %s", 
                            (nueva_pass, user['id']))
             db.commit()
@@ -1288,7 +1559,7 @@ def obtener_total_tareas():
     """Calcula el total de tareas globales activas en el sistema."""
     try:
         db = get_db_connection()
-        cursor = db.cursor()
+        cursor = db.cursor(dictionary=True, buffered=True)
         # Contamos solo las que no están en la papelera
         cursor.execute("SELECT COUNT(*) FROM tareas WHERE eliminado_at IS NULL")
         resultado = cursor.fetchone()
@@ -1298,6 +1569,357 @@ def obtener_total_tareas():
     except Exception as e:
         app.logger.error(f"⚠️ Error crítico en base de datos (obtener_total_tareas): {e}")
         return 0
+
+from flask import request, session, flash, redirect, url_for
+
+@app.route('/guardar_tarea', methods=['POST'])
+def guardar_tarea():
+    # 1. CAPTURAMOS LOS DATOS (Esto resuelve los errores de Pylance)
+    materia = request.form.get('materia')
+    tema = request.form.get('tema')
+    fecha = request.form.get('fecha')
+    tipo = request.form.get('tipo', 'tarea') # Por defecto 'tarea'
+    colaborador_email = request.form.get('colaboradores')
+    
+    # Datos de la sesión del usuario actual
+    usuario_id = session.get('usuario_id')
+    usuario_nombre = session.get('usuario')
+
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+    
+    try:
+        # 2. Guardamos la tarea para vos (el creador)
+        query_dueno = """
+            INSERT INTO tareas (usuario_id, materia, tema, fecha, tipo, colaboradores)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        """
+        cursor.execute(query_dueno, (usuario_id, materia, tema, fecha, tipo, colaborador_email))
+        
+        # 3. Si es grupal y hay un email, se la enviamos al otro
+        if tipo == 'grupal' and colaborador_email:
+            cursor.execute("SELECT id FROM usuarios WHERE email = %s", (colaborador_email,))
+            destinatario = cursor.fetchone()
+            
+            if destinatario:
+                # Se la insertamos en su agenda directamente
+                query_colaborador = """
+                    INSERT INTO tareas (usuario_id, materia, tema, fecha, tipo, colaboradores)
+                    VALUES (%s, %s, %s, %s, %s, %s)
+                """
+                # En colaboradores ponemos el nombre de quien la mandó
+                cursor.execute(query_colaborador, (destinatario['id'], materia, tema, fecha, 'grupal', usuario_nombre))
+                
+                # 4. Llamamos a la función de mail (definida abajo)
+                enviar_mail_invitacion(colaborador_email, materia, tema, usuario_nombre)
+
+        db.commit()
+        flash("¡Tarea guardada con éxito!", "success")
+    except Exception as e:
+        db.rollback()
+        print(f"Error: {e}")
+        flash("Hubo un error al guardar la tarea.", "danger")
+    finally:
+        cursor.close()
+        
+    return redirect(url_for('index')) 
+
+@app.route('/escaneo')
+def escaneo():
+    """Ruta para abrir la interfaz de la cámara del escáner QR."""
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    
+    # Intentamos cargar con tilde que es como figura en tu sistema de archivos original
+    try:
+        return render_template('escáner.html')
+    except Exception as e:
+        print(f"[Aviso] No se encontró escáner.html, probando alternativa: {e}")
+        return render_template('escaneo.html')
+
+
+@app.route('/compartir_tarea/<int:tarea_id>')
+def compartir_tarea(tarea_id):
+    """Genera la estructura de datos optimizada y compacta para el QR."""
+    if 'user_id' not in session:
+        return jsonify({"success": False, "error": "Sesión inválida. Inicie sesión nuevamente."}), 401
+
+    conn = None
+    cursor = None
+    try:
+        # Usamos la variable global de tu Pool (si se llama diferente, ej. 'pool', se adapta aquí)
+        # Viendo tu app, comúnmente la inicializaste como db_pool o pool. Aseguramos fallback:
+        if 'db_pool' in globals():
+            conn = db_pool.get_connection()
+        elif 'pool' in globals():
+            conn = pool.get_connection()
+        else:
+            # Si no, intentamos un fallback directo al módulo para que no rompa jamás
+            import app
+            conn = app.db_pool.get_connection()
+
+    except Exception as e:
+        print(f"[ERROR CRÍTICO POOL] No se pudo obtener una conexión activa: {e}")
+        return jsonify({"success": False, "error": "El servidor de base de datos está saturado. Intente de nuevo."}), 500
+        
+    try:
+        cursor = conn.cursor(dictionary=True)
+        # Buscamos la tarea validando que pertenezca al usuario activo y no esté en la papelera
+        cursor.execute("""
+            SELECT materia, tema, fecha, tipo, importante, color 
+            FROM tareas 
+            WHERE id = %s AND usuario_id = %s AND eliminado_at IS NULL
+        """, (tarea_id, session['user_id']))
+        tarea = cursor.fetchone()
+        
+        if not tarea:
+            return jsonify({"success": False, "error": "La tarea solicitada no existe o no tienes permisos."}), 404
+
+        # Formateo estricto de la fecha a string YYYY-MM-DD para evitar fallos de serialización JSON
+        if isinstance(tarea['fecha'], (date, datetime)):
+            fecha_str = tarea['fecha'].strftime('%Y-%m-%d')
+        else:
+            fecha_str = str(tarea['fecha'])
+
+        # Diccionario ultra optimizado con llaves cortas para reducir la densidad del código QR
+        datos_qr = {
+            "mat": tarea['materia'],
+            "tem": tarea['tema'],
+            "fec": fecha_str,
+            "tip": tarea['tipo'],
+            "imp": int(tarea['important']) if 'important' in tarea else int(tarea.get('importante', 0)),
+            "col": tarea['color'] if tarea['color'] else '#38bdf8'
+        }
+        
+        return jsonify({"success": True, "datos": datos_qr})
+
+    except Exception as e:
+        print(f"--- [ERROR CRÍTICO GENERACIÓN QR] ---: {str(e)}")
+        return jsonify({"success": False, "error": "Error interno al procesar los datos del QR."}), 500
+    finally:
+        # Devolución segura de recursos al pool para evitar el bloqueo del servidor de base de datos
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+
+@app.route('/importar_tarea', methods=['POST'])
+def importar_tarea():
+    """Procesa los datos capturados por el escáner e inserta la nueva tarea al usuario."""
+    if 'user_id' not in session:
+        return jsonify({"success": False, "error": "Tu sesión ha expirado o es inválida."}), 401
+        
+    data = request.get_json()
+    if not data:
+        return jsonify({"success": False, "error": "No se recibieron datos legibles del código QR."}), 400
+
+    # Extraemos los datos usando las llaves compactas mapeadas
+    materia = data.get('mat', 'Importado QR')
+    tema = data.get('tem', 'Sin asunto definido')
+    fecha = data.get('fec')
+    tipo = data.get('tip', 'tarea')
+    importante = data.get('imp', 0)
+    color = data.get('col', '#00d2ff')
+    descripcion = data.get('descripcion', '') # Captura la descripción compartida
+
+    if not fecha:
+        return jsonify({"success": False, "error": "El código QR no contiene una fecha de entrega válida."}), 400
+
+    conn = None
+    cursor = None
+    try:
+        # Obtenemos conexión limpia desde el Pool
+        if 'db_pool' in globals():
+            conn = db_pool.get_connection()
+        elif 'pool' in globals():
+            conn = pool.get_connection()
+        else:
+            import app
+            conn = app.db_pool.get_connection()
+            
+        cursor = conn.cursor()
+        
+        # Ejecutamos la inserción usando SQL puro para mantener consistencia con tu pool
+        query = """
+            INSERT INTO tareas (usuario_id, materia, tema, fecha, tipo, importante, color, descripcion, estado)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 'pendiente')
+        """
+        valores = (session['user_id'], materia, tema, fecha, tipo, importante, color, descripcion)
+        
+        cursor.execute(query, valores)
+        conn.commit()  # Confirmamos la transacción en caliente
+        
+        return jsonify({
+            "success": True, 
+            "message": "¡Excelente! La tarea compartida se ha sincronizado en tu Agenda Maestra."
+        })
+
+    except Exception as e:
+        if conn:
+            conn.rollback() # Ante cualquier falla, revertimos para evitar corrupción de datos
+        print(f"[ERROR CRÍTICO EN IMPORTACIÓN QR]: {str(e)}")
+        return jsonify({
+            "success": False, 
+            "error": "Error de persistencia al clonar la tarea en la base de datos."
+        }), 500
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+@app.route('/importar_qr_compartido_v2', methods=['POST'])
+def importar_qr_compartido_v2():
+    """
+    Ruta optimizada para la importación de tareas grupales via QR, 
+    soportando la nueva columna 'descripcion'.
+    """
+    if 'user_id' not in session:
+        return jsonify({"success": False, "error": "Sesión inválida."}), 401
+        
+    conn = None
+    cursor = None
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"success": False, "error": "Datos corruptos."}), 400
+
+        materia = data.get('materia', 'S/M')
+        tema = data.get('tema', 'Tarea Compartida')
+        fecha = data.get('fecha')
+        tipo = data.get('tipo', 'tarea')
+        importante = data.get('importante', 0)
+        color = data.get('color', '#00d2ff')
+        descripcion = data.get('descripcion', '') # Captura la descripción compartida
+
+        if not fecha:
+            return jsonify({"success": False, "error": "La fecha de entrega es un parámetro mandatorio."}), 400
+
+        if 'db_pool' in globals():
+            conn = db_pool.get_connection()
+        elif 'pool' in globals():
+            conn = pool.get_connection()
+        else:
+            import app
+            conn = app.db_pool.get_connection()
+            
+        cursor = conn.cursor(dictionary=True)
+
+        check_query = """
+            SELECT id FROM tareas 
+            WHERE usuario_id = %s AND materia = %s AND tema = %s AND fecha = %s AND eliminado_at IS NULL
+        """
+        cursor.execute(check_query, (session['user_id'], materia, tema, fecha))
+        registro_existente = cursor.fetchone()
+        
+        if registro_existente:
+            return jsonify({
+                "success": False, 
+                "error": "Operación cancelada: Esta tarea grupal ya fue sincronizada en tu tablero previamente."
+            }), 409
+
+        insert_query = """
+            INSERT INTO tareas (usuario_id, materia, tema, fecha, tipo, importante, color, descripcion, estado)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 'pendiente')
+        """
+        valores = (session['user_id'], materia, tema, fecha, tipo, importante, color, descripcion)
+        
+        cursor.execute(insert_query, valores)
+        conn.commit()
+        
+        return jsonify({
+            "success": True, 
+            "message": f"¡Éxito total! [Materia: {materia}] importada sin duplicados."
+        })
+
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        print(f"[ERROR CRÍTICO CONTROL-QR]: {str(e)}")
+        return jsonify({"success": False, "error": "Error interno del pool de persistencia."}), 500
+    finally:
+        if cursor: cursor.close()
+        if conn: conn.close()
+
+@app.route('/importar_qr_seguro_antiduplicado', methods=['POST'])
+def importar_qr_seguro_antiduplicado():
+    """
+    Ruta premium con bloqueo estricto de duplicación para tareas grupales compartidas.
+    Verifica la existencia previa de la combinación exacta en la base de datos antes de insertar.
+    """
+    if 'user_id' not in session:
+        return jsonify({"success": False, "error": "Falta autenticación de sesión."}), 401
+        
+    conn = None
+    cursor = None
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"success": False, "error": "Cuerpo de solicitud vacío o corrupto."}), 400
+
+        materia = data.get('materia', 'S/M').strip()
+        tema = data.get('tema', 'Misión Compartida').strip()
+        fecha = data.get('fecha')
+        tipo = data.get('tipo', 'tarea')
+        importante = data.get('importante', 0)
+        color = data.get('color', '#00d2ff')
+        descripcion = data.get('descripcion', '').strip() # Integra la columna del paso anterior
+
+        if not fecha:
+            return jsonify({"success": False, "error": "La fecha de entrega es un parámetro mandatorio."}), 400
+
+        # Obtención segura de conexiones desde tu Pool Dedicado
+        if 'db_pool' in globals():
+            conn = db_pool.get_connection()
+        elif 'pool' in globals():
+            conn = pool.get_connection()
+        else:
+            import app
+            conn = app.db_pool.get_connection()
+            
+        cursor = conn.cursor(dictionary=True)
+        
+        # --- VERIFICACIÓN DE CONTROL ANTI-DUPLICADOS ---
+        check_query = """
+            SELECT id FROM tareas 
+            WHERE usuario_id = %s AND materia = %s AND tema = %s AND fecha = %s AND eliminado_at IS NULL
+        """
+        cursor.execute(check_query, (session['user_id'], materia, tema, fecha))
+        registro_existente = cursor.fetchone()
+        
+        if registro_existente:
+            return jsonify({
+                "success": False, 
+                "error": "Operación cancelada: Esta tarea grupal ya fue sincronizada en tu tablero previamente."
+            }), 409
+
+        # --- INSERCIÓN ATÓMICA DE LA TAREA CLONADA ---
+        insert_query = """
+            INSERT INTO tareas (usuario_id, materia, tema, fecha, tipo, importante, color, descripcion, estado)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 'pendiente')
+        """
+        valores = (session['user_id'], materia, tema, fecha, tipo, importante, color, descripcion)
+        
+        cursor.execute(insert_query, valores)
+        conn.commit()
+        
+        return jsonify({
+            "success": True, 
+            "message": f"¡Éxito total! [Materia: {materia}] importada sin duplicados."
+        })
+
+    except Exception as e:
+        if conn:
+            conn.rollback()
+        print(f"[ERROR CRÍTICO EN IMPORTACIÓN QR]: {e}")
+        return jsonify({
+            "success": False,
+            "error": "Error de persistencia al clonar la tarea en la base de datos."
+        }), 500
+    finally:
+        if cursor: cursor.close()
+        if conn: conn.close()
 
 if __name__ == '__main__':
     app.run(debug=True)

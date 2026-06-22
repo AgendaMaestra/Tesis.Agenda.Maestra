@@ -1,0 +1,230 @@
+{% extends 'layout.html' %}
+{% block content %}
+
+<style>
+    /* Estilos de animación para el Escáner */
+    .scanner-container {
+        position: relative;
+        width: 100%;
+        aspect-ratio: 1/1;
+        border-radius: 24px;
+        overflow: hidden;
+        border: 2px solid rgba(56, 189, 248, 0.2);
+        background: #000;
+        box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+    }
+
+    /* Línea láser de escaneo */
+    .scan-line {
+        position: absolute;
+        width: 100%;
+        height: 4px;
+        background: linear-gradient(to bottom, transparent, var(--accent), transparent);
+        box-shadow: 0 0 15px var(--accent);
+        top: 0;
+        z-index: 10;
+        animation: scanMove 2.5s infinite ease-in-out;
+        pointer-events: none;
+    }
+
+    @keyframes scanMove {
+        0% { top: 0%; opacity: 0.2; }
+        50% { top: 100%; opacity: 1; }
+        100% { top: 0%; opacity: 0.2; }
+    }
+
+    /* Esquinas Neón animadas */
+    .corner {
+        position: absolute;
+        width: 30px;
+        height: 30px;
+        border: 4px solid var(--accent);
+        z-index: 11;
+        filter: drop-shadow(0 0 8px var(--accent));
+        animation: pulseCorners 2s infinite;
+    }
+
+    @keyframes pulseCorners {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.6; transform: scale(0.95); }
+    }
+
+    .top-left { top: 20px; left: 20px; border-right: none; border-bottom: none; border-radius: 8px 0 0 0; }
+    .top-right { top: 20px; right: 20px; border-left: none; border-bottom: none; border-radius: 0 8px 0 0; }
+    .bottom-left { bottom: 20px; left: 20px; border-right: none; border-top: none; border-radius: 0 0 0 8px; }
+    .bottom-right { bottom: 20px; right: 20px; border-left: none; border-top: none; border-radius: 0 0 8px 0; }
+
+    .status-badge {
+        display: inline-block;
+        padding: 6px 15px;
+        border-radius: 20px;
+        background: rgba(56, 189, 248, 0.1);
+        color: var(--accent);
+        font-size: 0.75rem;
+        font-weight: bold;
+        text-transform: uppercase;
+        margin-bottom: 15px;
+        border: 1px solid rgba(56, 189, 248, 0.3);
+    }
+</style>
+
+<div class="main-wrapper" style="display: flex; align-items: center; justify-content: center; min-height: 85vh; background: radial-gradient(circle at center, #0f172a 0%, #000 100%); padding: 20px;">
+    
+    <div class="glass-card" style="max-width: 450px; width: 100%; text-align: center; padding: 30px; border: 1px solid rgba(255,255,255,0.1); position: relative;">
+        
+        <div class="status-badge">Sistema de Visión Activo</div>
+        
+        <h2 style="color: #fff; letter-spacing: 3px; font-weight: 800; margin-bottom: 5px;">ESCÁNER</h2>
+        <p style="color: rgba(255,255,255,0.5); font-size: 0.85rem; margin-bottom: 25px;">Sincroniza tareas vía Agenda Maestra</p>
+        
+        <div class="scanner-container">
+            <canvas id="canvas" hidden style="width: 100%; height: 100%; object-fit: cover; filter: brightness(1.1) contrast(1.1);"></canvas>
+            
+            <div id="visual-overlay">
+                <div class="scan-line"></div>
+                <div class="corner top-left"></div>
+                <div class="corner top-right"></div>
+                <div class="corner bottom-left"></div>
+                <div class="corner bottom-right"></div>
+            </div>
+
+            <div id="guide-box" style="position: absolute; top: 20%; left: 20%; width: 60%; height: 60%; border: 1px solid rgba(56, 189, 248, 0.3); pointer-events: none; z-index: 5;" hidden></div>
+        </div>
+
+        <div id="loadingMessage" style="color: var(--accent); margin: 20px; font-weight: bold; animation: pulse 1.5s infinite;">
+            ⌛ Inicializando Cámara...
+        </div>
+
+        <div id="status-text" style="color: rgba(255,255,255,0.8); margin-top: 25px; padding: 15px; background: rgba(255,255,255,0.03); border-radius: 15px; font-size: 0.9rem; border: 1px solid rgba(255,255,255,0.05);">
+            Encuadra el código QR para importar
+        </div>
+
+        <div style="margin-top: 25px;">
+            <a href="{{ url_for('index') }}" style="text-decoration: none; color: rgba(255,255,255,0.4); font-size: 0.8rem; letter-spacing: 1px; transition: 0.3s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='rgba(255,255,255,0.4)'">
+                ✕ CANCELAR OPERACIÓN
+            </a>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+
+<script>
+    const video = document.createElement("video");
+    const canvasElement = document.getElementById("canvas");
+    const canvas = canvasElement.getContext("2d", { willReadFrequently: true });
+    const loadingMessage = document.getElementById("loadingMessage");
+    const statusText = document.getElementById("status-text");
+
+    // Configuración de cámara optimizada
+    navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: "environment", width: { ideal: 1080 }, height: { ideal: 1080 } } 
+    }).then(function(stream) {
+        video.srcObject = stream;
+        video.setAttribute("playsinline", true); 
+        video.play();
+        requestAnimationFrame(tick);
+    }).catch(err => {
+        loadingMessage.innerHTML = "❌ Error: Acceso denegado a la cámara.";
+        statusText.innerText = "Asegúrate de usar HTTPS y dar permisos.";
+    });
+
+    function tick() {
+        if (video.readyState === video.HAVE_ENOUGH_DATA) {
+            loadingMessage.hidden = true;
+            canvasElement.hidden = false;
+
+            canvasElement.height = video.videoHeight;
+            canvasElement.width = video.videoWidth;
+            canvas.drawImage(video, 0, 0, canvasElement.width, canvasElement.height);
+            
+            const imageData = canvas.getImageData(0, 0, canvasElement.width, canvasElement.height);
+            const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                inversionAttempts: "dontInvert",
+            });
+
+            if (code) {
+                dibujarRectangulo(code.location);
+                enviarTarea(code.data);
+                return; 
+            }
+        }
+        requestAnimationFrame(tick);
+    }
+
+    function dibujarRectangulo(loc) {
+        canvas.beginPath();
+        canvas.lineWidth = 6;
+        canvas.strokeStyle = "#38bdf8";
+        canvas.moveTo(loc.topLeftCorner.x, loc.topLeftCorner.y);
+        canvas.lineTo(loc.topRightCorner.x, loc.topRightCorner.y);
+        canvas.lineTo(loc.bottomRightCorner.x, loc.bottomRightCorner.y);
+        canvas.lineTo(loc.bottomLeftCorner.x, loc.bottomLeftCorner.y);
+        canvas.closePath();
+        canvas.stroke();
+    }
+
+    // =====================================================================
+// MANEJADOR DE EVENTOS PARA LA SINCRONIZACIÓN QR DE LA CÁMARA
+// =====================================================================
+
+function enviarTarea(dataString) {
+    const statusText = document.getElementById("statusText") || { set innerHTML(val){} };
+    
+    try {
+        // Validamos localmente que el formato leído sea un JSON consistente
+        const data = JSON.parse(dataString);
+        
+        // Comprobamos la existencia de las firmas de propiedad compactas obligatorias
+        if (!data.mat || !data.tem || !data.fec) {
+            throw new Error("El formato del código QR escaneado no pertenece a la Agenda Maestra.");
+        }
+
+        statusText.innerHTML = "<span style='color:var(--accent); font-weight:800; letter-spacing:1px;'>⚡ CÓDIGO DETECTADO. SINCRONIZANDO...</span>";
+        
+        // Ejecutamos una respuesta háptica en smartphones compatibles para mejorar el UX
+        if (navigator.vibrate) {
+            navigator.vibrate(100);
+        }
+
+        // Hacemos el POST asíncrono pasándole la carga útil compactada
+        fetch("{{ url_for('importar_tarea') }}", {
+            method: "POST",
+            headers: { 
+                "Content-Type": "application/json",
+                "X-Requested-With": "XMLHttpRequest"
+            },
+            body: JSON.stringify(data)
+        })
+        .then(res => {
+            if (!res.ok) {
+                return res.json().then(errData => { throw new Error(errData.error || "Fallo en validación.") });
+            }
+            return res.json();
+        })
+        .then(res => {
+            if(res.success) {
+                statusText.innerHTML = "<span style='color:#10b981; font-weight:800;'>✅ ¡MISIÓN IMPORTADA CON ÉXITO!</span>";
+                
+                // Redirección limpia al dashboard principal refrescando la lista de tareas
+                setTimeout(() => {
+                    window.location.href = "{{ url_for('index') }}?msg=success_sync";
+                }, 1200);
+            } else {
+                alert("Error del Sistema: " + res.error);
+                if(location) location.reload();
+            }
+        })
+        .catch(err => {
+            console.error("Fallo crítico durante el fetch de importación:", err);
+            alert("Error de sincronización: " + err.message);
+            if(location) location.reload();
+        });
+        
+    } catch (e) {
+        console.error("Error al decodificar la cadena del QR leído:", e);
+        statusText.innerHTML = "<span style='color:#ff4757; font-weight:700;'>⚠️ CÓDIGO NO VÁLIDO O CORRUPTO</span>";
+    }
+}
+</script>
+{% endblock %}

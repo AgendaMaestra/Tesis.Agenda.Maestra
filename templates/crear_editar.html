@@ -1,69 +1,50 @@
 {% extends 'layout.html' %} 
 {% block content %} 
 <div class="main-wrapper"> 
-     <div class="glass-card"> 
-         <h2 style="font-size: 1.8rem; margin-bottom: 30px; color: var(--accent);"> 
-             {{ 'EDITAR ELEMENTO' if tarea else 'NUEVO ELEMENTO' }} 
-         </h2> 
-                 
-         <form method="POST" id="main-form"> 
-             <label style="font-size:0.75rem; font-weight:800; opacity:0.5; text-transform:uppercase;">Tipo de actividad</label> 
-             <select name="tipo" required> 
-                 <option value="tarea" {{ 'selected' if tarea and tarea.tipo == 'tarea' else '' }}>Es una Tarea ordinaria</option> 
-                 <option value="examen" {{ 'selected' if tarea and tarea.tipo == 'examen' else '' }}>Es un Examen evaluativo</option> 
-             </select> 
+    <div class="glass-card"> 
+        <h2 style="font-size: 1.8rem; margin-bottom: 30px; color: var(--accent);"> 
+            {{ 'EDITAR ELEMENTO' if tarea else 'NUEVO ELEMENTO' }} 
+        </h2> 
+        
+        <form method="POST" id="main-form"> 
+            <label style="font-size:0.75rem; font-weight:800; opacity:0.5; text-transform:uppercase;">Tipo de actividad</label> 
+            <select name="tipo" required style="margin-bottom: 20px;"> 
+                <option value="tarea" {{ 'selected' if tarea and tarea.tipo == 'tarea' else '' }}>Es una Tarea ordinaria</option> 
+                <option value="examen" {{ 'selected' if tarea and tarea.tipo == 'examen' else '' }}>Es un Examen evaluativo</option> 
+            </select> 
 
-             <label style="font-size:0.75rem; font-weight:800; opacity:0.5; text-transform:uppercase;">Nombre de la Materia</label> 
-             <input type="text" name="materia" placeholder="Ej: Matematica" value="{{ tarea.materia if tarea else '' }}" required> 
-                         
-             <label style="font-size:0.75rem; font-weight:800; opacity:0.5; text-transform:uppercase;">Título o tema de estudio</label> 
-             <input type="text" name="tema" placeholder="Ej: Capitulo 3" value="{{ tarea.tema if tarea else '' }}" required> 
+            <label style="font-size:0.75rem; font-weight:800; opacity:0.5; text-transform:uppercase;">Nombre de la Materia</label> 
+            <input type="text" name="materia" placeholder="Ej: Matematica" value="{{ tarea.materia if tarea else '' }}" required> 
+            
+            <label style="font-size:0.75rem; font-weight:800; opacity:0.5; text-transform:uppercase;">Título o tema de estudio</label> 
+            <input type="text" name="tema" placeholder="Ej: Capitulo 3" value="{{ tarea.tema if tarea else '' }}" required> 
 
-             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
-                 <div>
-                     <label style="font-size:0.75rem; font-weight:800; opacity:0.5; text-transform:uppercase;">Día de entrega</label> 
-                     <input type="date" name="fecha" value="{{ tarea.fecha if tarea else '' }}" required> 
-                 </div>
-                 
-                 <div>
-                     <label style="font-size:0.75rem; font-weight:800; opacity:0.5; text-transform:uppercase;">Hora de entrega</label> 
-                     
-                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                         <select name="hora_h" style="margin-bottom:0;">
-                             {% for h in range(0, 24) %}
-                                 {% set hr = "%02d" % h %}
-                                 <option value="{{ hr }}" {{ 'selected' if hora_actual == hr else '' }}>{{ hr }} Hs</option>
-                             {% endfor %}
-                         </select>
-                         <select name="hora_m" style="margin-bottom:0;">
-                             {% for m in range(0, 60, 5) %}
-                                 {% set mn = "%02d" % m %}
-                                 <option value="{{ mn }}" {{ 'selected' if minuto_actual == mn else '' }}>{{ mn }} min</option>
-                             {% endfor %}
-                         </select>
-                     </div>
-                 </div>
-             </div>
-
-             <!-- SECCIÓN DE TAREAS GRUPALES (Ahora dentro del Form) -->
-             <div class="input-group" style="margin-bottom: 20px;">
-                <label style="font-size:0.75rem; font-weight:800; opacity:0.5; text-transform:uppercase;">Modalidad de Trabajo</label>
-                <select name="tipo_tarea" id="tipo_tarea" onchange="toggleGrupo()" 
-                        style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 12px; color: white;">
-                    <option value="individual">Individual</option>
-                    <option value="grupal">Grupal (Colaborativa)</option>
-                </select>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                <div>
+                    <label style="font-size:0.75rem; font-weight:800; opacity:0.5; text-transform:uppercase;">Día de entrega</label> 
+                    <input type="date" name="fecha" value="{{ tarea.fecha if tarea else '' }}" required> 
+                </div>
+                <div>
+                    <label style="font-size:0.75rem; font-weight:800; opacity:0.5; text-transform:uppercase;">Hora de entrega</label> 
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <select name="hora_h" style="margin-bottom:0;">
+                            {% for h in range(0, 24) %}
+                                {% set hr = "%02d" % h %}
+                                <option value="{{ hr }}" {{ 'selected' if (tarea and tarea.hora_entrega.hour == h) else '' }}>{{ hr }} Hs</option>
+                            {% endfor %}
+                        </select>
+                        <select name="hora_m" style="margin-bottom:0;">
+                            {% for m in range(0, 60, 5) %}
+                                {% set mn = "%02d" % m %}
+                                <option value="{{ mn }}" {{ 'selected' if (tarea and tarea.hora_entrega.minute == m) else '' }}>{{ mn }} min</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
             </div>
 
-            <div id="campo-colaboradores" style="display: none; margin-bottom: 20px;">
-                <label style="font-size: 0.7rem; opacity: 0.5; text-transform:uppercase;">Correos de Compañeros (Separados por coma)</label>
-                <input type="text" name="colaboradores" placeholder="ejemplo1@mail.com, ejemplo2@mail.com"
-                       style="width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 12px; color: white;">
-            </div>
-                         
-             <input type="checkbox" name="importante" id="imp-check" style="display:none;" {{ 'checked' if tarea and tarea.importante else '' }}> 
-                         
-             <div class="priority-box {{ 'active' if tarea and tarea.importante else '' }}" id="priority-trigger"> 
+            <input type="checkbox" name="importante" id="imp-check" value="1" style="display:none;" {{ 'checked' if tarea and tarea.importante else '' }}> 
+            <div class="priority-box {{ 'active' if tarea and tarea.importante else '' }}" id="priority-trigger"> 
                  <div> 
                      <div style="font-weight: 800; font-size: 0.95rem;">Prioridad Máxima</div> 
                      <div style="font-size: 0.75rem; opacity: 0.6; margin-top: 3px;">Resaltar al principio del tablero principal</div> 
@@ -71,43 +52,137 @@
                  <div class="priority-toggle"></div> 
              </div> 
 
-             <button type="submit" class="btn-main" style="margin-top: 10px;">GUARDAR ELEMENTO</button> 
-             <a href="{{ url_for('index') }}" style="display:block; text-align:center; margin-top:20px; color:var(--text-muted); text-decoration:none; font-size:0.85rem; font-weight: 700;">Cancelar y salir</a> 
-         </form> 
-     </div>
+            <button type="submit" class="btn-main" style="width: 100%; padding: 15px; border-radius: 12px; border: none; background: var(--accent); color: #0f172a; font-weight: 800; cursor: pointer;">GUARDAR ELEMENTO</button> 
+            <a href="{{ url_for('index') }}" style="display:block; text-align:center; margin-top:20px; color:var(--text-muted); text-decoration:none; font-size:0.85rem; font-weight: 700;">Cancelar y salir</a> 
+        </form> 
+    </div>
 </div>
 
 <script>
-    // Función para mostrar/ocultar el campo de colaboradores
-    function toggleGrupo() {
-        const tipo = document.getElementById('tipo_tarea').value;
-        const campo = document.getElementById('campo-colaboradores');
-        campo.style.display = (tipo === 'grupal') ? 'block' : 'none';
+/**
+ * SISTEMA DE GESTIÓN DE FORMULARIO - AGENDA MAESTRA (V. FINAL)
+ * Este script garantiza la sincronización total entre la interfaz y el servidor.
+ * Controla: 
+ * 1. Prioridad: Feedback visual y estado del checkbox.
+ * 2. Visibilidad: Campo de colaboradores condicional.
+ * 3. Envío: Gestión de AJAX (fetch) y limpieza de datos pre-envío.
+ */
+
+document.addEventListener("DOMContentLoaded", function() {
+    console.log("Agenda Maestra: Sistema de gestión inicializado.");
+
+    // --- 1. Mapeo de elementos del DOM ---
+    const trigger = document.getElementById('priority-trigger');
+    const checkbox = document.getElementById('imp-check');
+    const tipoSelect = document.getElementById('tipo_tarea'); // ID verificado
+    const campoColab = document.getElementById('campo-colaboradores');
+    const form = document.getElementById('main-form');
+
+    // --- 2. LÓGICA DE PRIORIDAD (Feedback Visual) ---
+    function aplicarEstadoPrioridad(isActive) {
+        if (!trigger) return;
+        
+        if (isActive) {
+            trigger.classList.add('active');
+            trigger.style.background = "rgba(255, 193, 7, 0.2)";
+            trigger.style.borderColor = "var(--warning, #ffc107)";
+        } else {
+            trigger.classList.remove('active');
+            trigger.style.background = "rgba(255, 255, 255, 0.03)";
+            trigger.style.borderColor = "var(--glass-border)";
+        }
     }
 
-    // Lógica para el toggle de prioridad (asegúrate de tener esto para que el diseño funcione)
-    document.getElementById('priority-trigger').addEventListener('click', function() {
-        this.classList.toggle('active');
-        const checkbox = document.getElementById('imp-check');
-        checkbox.checked = !checkbox.checked;
-    });
+    if (trigger && checkbox) {
+        // Carga inicial: Ajusta el estilo basado en si el checkbox ya está marcado (BD)
+        aplicarEstadoPrioridad(checkbox.checked);
 
-     const trigger = document.getElementById('priority-trigger'); 
-     const checkbox = document.getElementById('imp-check'); 
-     
-     trigger.addEventListener('click', function() { 
-         checkbox.checked = !checkbox.checked; 
-         if(checkbox.checked) { 
-             trigger.classList.add('active'); 
-         } else { 
-             trigger.classList.remove('active'); 
-         } 
-     }); 
-</script> 
+        // Evento de clic: Alterna el estado del checkbox y el estilo
+        trigger.addEventListener('click', function() {
+            checkbox.checked = !checkbox.checked;
+            aplicarEstadoPrioridad(checkbox.checked);
+        });
+    }
 
+    // --- 3. LÓGICA DE VISIBILIDAD (Campo Colaboradores) ---
+    function toggleGrupo() {
+        if (tipoSelect && campoColab) {
+            // Regla: Se muestra si el valor es 'grupal'
+            if (tipoSelect.value === 'grupal') {
+                campoColab.style.display = 'block';
+            } else {
+                campoColab.style.display = 'none';
+            }
+        }
+    }
+
+    // Listener para cambios en el select
+    if (tipoSelect) {
+        tipoSelect.addEventListener('change', toggleGrupo);
+        // Llamada inicial para corregir el estado al cargar la página
+        toggleGrupo();
+    }
+
+    // --- 4. GESTIÓN DE ENVÍO (Fetch / AJAX) ---
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault(); // Detenemos el envío tradicional
+
+            const formData = new FormData(this);
+
+            // A. Aseguramos el valor de prioridad (1 si está marcado, 0 si no)
+            formData.set('importante', (checkbox && checkbox.checked) ? '1' : '0');
+
+            // B. Limpieza de datos: Si el campo está oculto, aseguramos que colaboradores sea vacío
+            if (tipoSelect && tipoSelect.value !== 'grupal') {
+                formData.set('colaboradores', '');
+            }
+
+            // C. Interfaz Optimista (Opcional: si existe la función)
+            if (typeof agregarTareaALaListaVisual === "function") {
+                agregarTareaALaListaVisual({
+                    materia: formData.get('materia'),
+                    tema: formData.get('tema'),
+                    id_temporal: Date.now()
+                });
+            }
+
+            // D. Envío Real al Servidor
+            fetch('/crear', {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if(data.success || data.status === "success") {
+                    console.log("Sincronización exitosa con la BD.");
+                    window.location.href = "/";
+                } else {
+                    alert("Error en el servidor: " + (data.error || "Algo salió mal."));
+                }
+            })
+            .catch(err => {
+                console.error("Error de conexión:", err);
+                alert("Error de conexión con la Agenda Maestra. Verifica tu red.");
+            });
+        });
+    }
+
+    // --- 5. Debug de seguridad ---
+    if (!trigger || !checkbox || !tipoSelect) {
+        console.warn("Agenda Maestra: Aviso, algunos IDs no fueron encontrados en el HTML. Verifica los IDs en tu archivo crear_editar.html.");
+    }
+});
+</script>
 <style>
+/* VARIABLES DE DISEÑO */
+:root {
+    --glass-border: rgba(255, 255, 255, 0.1);
+}
+
 /* ============================================================
-   MODO ESCRITORIO (Sin cambios de orden)
+   MODO ESCRITORIO
    ============================================================ */
 @media screen and (min-width: 601px) {
     .glass-card {
@@ -117,7 +192,6 @@
         display: block !important;
     }
 
-    /* Mantiene la Fecha y Hora en una sola fila de dos columnas */
     .grid-form-row {
         display: grid !important;
         grid-template-columns: 1fr 1fr !important;
@@ -125,7 +199,6 @@
         margin-bottom: 25px !important;
     }
 
-    /* Caja de Prioridad debajo de Fecha/Hora */
     .priority-box {
         display: flex !important;
         justify-content: space-between !important;
@@ -136,78 +209,61 @@
         border: 1px solid var(--glass-border) !important;
         border-radius: 12px !important;
     }
-
-    /* Botón Guardar y Cancelar */
-    .btn-main {
-        width: 100% !important;
-        padding: 16px !important;
-    }
-    
-    a[href*="index"] {
-        display: block !important;
-        text-align: center !important;
-        margin-top: 20px !important;
-    }
 }
 
 /* ============================================================
-   MODO MÓVIL (Organizado hacia abajo)
+   MODO MÓVIL (Optimizado para UI/UX)
    ============================================================ */
 @media screen and (max-width: 600px) {
-    .main-wrapper {
-        padding: 10px !important;
-    }
+    .main-wrapper { padding: 10px !important; }
 
     .glass-card {
         padding: 25px 15px !important;
         width: 100% !important;
+        border-radius: 20px !important;
     }
 
-    /* Forzamos que Fecha y Hora se apilen verticalmente */
-    .glass-card form div[style*="grid-template-columns: 1fr 1fr"] {
-        grid-template-columns: 1fr !important; 
+    /* Apilado vertical de Fecha y Hora */
+    .grid-form-row {
+        display: flex !important;
+        flex-direction: column !important;
         gap: 15px !important;
     }
 
-    /* Pero los selectores de Hora (HH y MM) se quedan juntos */
-    div[style*="grid-template-columns: 1fr 1fr"] div[style*="display: grid"] {
-        grid-template-columns: 1fr 1fr !important;
-        gap: 10px !important;
-    }
-
-    /* Inputs más altos para el dedo y fuente de 16px para evitar zoom */
+    /* Inputs optimizados para pantallas táctiles */
     input[type="text"], 
     input[type="date"], 
     select {
         width: 100% !important;
-        height: 50px !important;
-        font-size: 16px !important; 
-        margin-bottom: 15px !important;
+        height: 55px !important; /* Más alto para el pulgar */
+        font-size: 16px !important; /* Evita zoom automático en iOS */
+        margin-bottom: 10px !important;
     }
 
-    /* Prioridad: Ajustada para el ancho del celular */
+    /* Optimización UX Móvil para el área de texto de descripción */
+    textarea[name="descripcion"] {
+        font-size: 16px !important; /* Evita el zoom automático en iOS */
+        min-height: 120px !important; /* Espacio cómodo en pantallas táctiles */
+    }
+
     .priority-box {
-        margin-top: 10px !important;
-        margin-bottom: 25px !important;
+        margin: 15px 0 25px 0 !important;
         padding: 15px !important;
     }
 
-    /* Botón de Guardar: Grande y centrado */
     .btn-main {
         width: 100% !important;
         padding: 18px !important;
-        font-size: 1rem !important;
-        border-radius: 12px !important;
+        font-weight: bold !important;
+        text-transform: uppercase;
     }
 
-    /* Cancelar: Abajo de todo */
     a[href*="index"] {
         display: block !important;
         text-align: center !important;
-        margin-top: 25px !important;
+        padding: 15px !important;
+        color: rgba(255,255,255,0.6) !important;
     }
 }
-
 </style>
-
 {% endblock %}
